@@ -344,9 +344,9 @@ export function makeImageWriteOperation(type, image, visibleArea) {
     execute: () => {
       let i = 0;
       for (let y = image.y; y < image.y + image.height; y++)
-        for (let x = image.x; x < image.x + image.width; x++) {
+        for (let x = image.x; x < image.x + image.width; x++, i++) {
           if (!visibleArea || x >= visibleArea.x0 && x < visibleArea.x1 && y >= visibleArea.y0 && y < visibleArea.y1) {
-            bitmapForType(type).setPixel(x, y, image.pixels[i++]);
+            bitmapForType(type).setPixel(x, y, image.pixels[i]);
           }
         }
     }

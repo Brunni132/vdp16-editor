@@ -10,6 +10,7 @@ export class ImageEditorController extends Controller {
       ...items[key],
       text: key,
       selected: key === this.selectedItemName,
+      focused: this.focusedMode,
       indType: 'item',
       ...fixedProps
     });

@@ -10,7 +10,7 @@ import {
   add,
   CanvasComponent,
   floorPos,
-  FUNCTIONS,
+  FUNCTIONS, invert,
   MIN_DISTANCE_FOR_MOVE,
   neg,
   subtract,
@@ -138,10 +138,8 @@ export class ImageEditorComponent extends CanvasComponent {
       this.resetZoom();
     } else if (e.key === 'y' && !e.metaKey && !e.ctrlKey) {
       this.zoomAt(this.lastMousePos, 0.9);
-      this.ensureTransformInVisibleArea();
     } else if (e.key === 'z' && !e.metaKey && !e.ctrlKey) {
       this.zoomAt(this.lastMousePos, 1.1);
-      this.ensureTransformInVisibleArea();
     } else if (e.key === 'f' && !e.metaKey && !e.ctrlKey) {
       const selected = this.bitmapImage.indicators.find(i => i.highlighted);
       if (selected) this.focusArea(selected.x, selected.y, selected.w, selected.h, false, true);
@@ -287,7 +285,7 @@ export class ImageEditorComponent extends CanvasComponent {
 
   drawIndicator(indicator, pasted) {
     if (indicator.indType === 'object' && !indicator.highlighted) return;
-    if (indicator.x + indicator.w <= this.visibleArea.x0 || indicator.y + indicator.h <= this.visibleArea.y0 || indicator.x >= this.visibleArea.x1 || indicator.y >= this.visibleArea.y1) return;
+    //if (indicator.x + indicator.w <= this.visibleArea.x0 || indicator.y + indicator.h <= this.visibleArea.y0 || indicator.x >= this.visibleArea.x1 || indicator.y >= this.visibleArea.y1) return;
 
     const { context } = this;
     const { width, height } = this.canvas;
@@ -368,6 +366,14 @@ export class ImageEditorComponent extends CanvasComponent {
       let [x1, y1] = this.posOnScreen([rect.x1, rect.y1]);
       this.drawDashedRectangle(context, x0, y0, x1, y1, '#fff', this.tool === 'cloner' ? 'rgba(0, 0, 255, 0.5)' : null);
     }
+  }
+
+  posInTransformedImageClamped(pos) {
+    const [x, y] = this.posInTransformedImage(pos);
+    return [
+      Math.min(this.visibleArea.x1 - 1, Math.max(this.visibleArea.x0, x)),
+      Math.min(this.visibleArea.y1 - 1, Math.max(this.visibleArea.y0, y))
+    ];
   }
 
   ensureTransformInVisibleArea() {
@@ -471,7 +477,7 @@ export class ImageEditorComponent extends CanvasComponent {
         this.isDown = false;
       }
     } else if (this.tool === 'move') {
-      const imagePosition = this.posInTransformedImage(mousePos);
+      const imagePosition = this.posInTransformedImageClamped(mousePos);
       const indicator = this.indicatorAtPosition(imagePosition[0], imagePosition[1]);
       if (indicator) {
         if (e.ctrlKey) {
@@ -493,7 +499,7 @@ export class ImageEditorComponent extends CanvasComponent {
         this.onMouseMove(e, mousePos);
       }
     } else if (this.isRectTool()) {
-			this.rectStart = floorPos(this.posInTransformedImage(mousePos));
+			this.rectStart = floorPos(this.posInTransformedImageClamped(mousePos));
 			this.onMouseMove(e, mousePos);
     } else if (this.tool === 'place') {
       const pos = this.posInTransformedImage(mousePos);
@@ -532,6 +538,7 @@ export class ImageEditorComponent extends CanvasComponent {
       this.draggedPastedImagePos = add(this.draggedPastedImagePos, dist);
       this.pastedImage.x = Math.round(this.draggedPastedImagePos[0]);
       this.pastedImage.y = Math.round(this.draggedPastedImagePos[1]);
+      setStatusText(`Pasting at (${this.pastedImage.x}, ${this.pastedImage.y})`);
       this.draggingPastedImage = transformed;
       this.notifyBitmapImageChanged();
     } else if (this.moveLastPos) {
@@ -540,12 +547,12 @@ export class ImageEditorComponent extends CanvasComponent {
       if (!this.hasMoved && vec2.length(dist) < MIN_DISTANCE_FOR_MOVE) return;
       // Move view
       translate(this.transform, this.distanceInTransformedImage(dist));
-      this.ensureTransformInVisibleArea();
+      if (this.panMode === 'scroll') this.ensureTransformInVisibleArea();
       this.moveLastPos = mousePos;
       this.hasMoved = true;
     } else if (this.tool === 'move') {
       if (this.moveModeInitialPos) {
-        const imagePosition = this.posInTransformedImage(mousePos);
+        const imagePosition = this.posInTransformedImageClamped(mousePos);
         const dist = this.distanceOnScreen(subtract(imagePosition, this.moveModeLastPos));
         if (!this.hasMoved && vec2.length(dist) < MIN_DISTANCE_FOR_MOVE) return;
         this.getHighlighted().forEach(i => {
@@ -555,10 +562,10 @@ export class ImageEditorComponent extends CanvasComponent {
         this.moveModeLastPos = imagePosition;
         this.hasMoved = true;
       } else {
-        this.rectEnd = this.posInTransformedImage(mousePos);
+        this.rectEnd = this.posInTransformedImageClamped(mousePos);
       }
     } else if (this.isRectTool()) {
-      this.rectEnd = floorPos(this.posInTransformedImage(mousePos)).map(e => e + 1);
+      this.rectEnd = floorPos(this.posInTransformedImageClamped(mousePos)).map(e => e + 1);
       if (this.tool === 'rect') {
         const sel = this.getSelectionRectangle();
         sel && setStatusText(`Rect size: ${sel.width}x${sel.height} (pos: ${sel.x0 - this.visibleArea.x0}, ${sel.y0 - this.visibleArea.y0})`);
@@ -604,11 +611,11 @@ export class ImageEditorComponent extends CanvasComponent {
   onMouseWheel(e, mousePos) {
     if (this.panMode === 'scroll') {
       translate(this.transform, this.distanceInTransformedImage([0, -e.deltaY / 2]));
+      this.ensureTransformInVisibleArea();
     }
     else if (this.panMode === 'zoom') {
       this.zoomAt(mousePos, e.deltaY > 0 ? 0.8 : 1.25);
     }
-    this.ensureTransformInVisibleArea();
     e.preventDefault();
   }
 
