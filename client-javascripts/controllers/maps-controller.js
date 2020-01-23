@@ -293,9 +293,10 @@ export class MapsController extends ImageEditorController {
       return alert('Unable to edit an object list directly. These are meant to be used in combination with a tilemap. Double-click on a map, then from the plane list, add this object list.');
     }
     this.focusedMode = true;
-    this.imageEditor.setVisibleArea(indicator.x, indicator.y, indicator.w, indicator.h);
     this.planeSelector.clearPlanes();
     this.planeSelector.addPlane(this.selectedItemName);
+    // Needs to be done later because the computation uses pixelW/pixelH which are set by updateEditor (called as a side-effect of addPlane)
+    this.imageEditor.setVisibleArea(indicator.x, indicator.y, indicator.w, indicator.h);
   }
 
   onSelectItem(indicator) {
@@ -421,10 +422,8 @@ export class MapsController extends ImageEditorController {
     // Cannot use hidden tool
     if (this.hasClass(`.${tool}-button`, 'hidden') || this.tool === tool) return;
     // Cancel edit mode
-    if (tool === 'select' && this.focusedMode) {
-      this.focusedMode = false;
-      this.imageEditor.resetVisibleArea();
-    }
+    const cancelEditMode = (tool === 'select' && this.focusedMode);
+    if (cancelEditMode) this.focusedMode = false;
     if (!['place', 'brush', 'clone'].includes(tool)) {
       this.tileSelector.deselectTile();
       this.clearBrush();
@@ -436,6 +435,8 @@ export class MapsController extends ImageEditorController {
     this.unsetClass('.toolbar button', 'active');
     this.setClass(`.${this.tool}-button`, 'active');
     this.updateEditor();
+    // Needs to be done later because the computation uses pixelW/pixelH which are set by updateEditor
+    if (cancelEditMode) this.imageEditor.resetVisibleArea();
   }
 
   getCommonPropertiesForObjects(objects) {

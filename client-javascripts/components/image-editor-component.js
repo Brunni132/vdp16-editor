@@ -73,10 +73,12 @@ export class ImageEditorComponent extends CanvasComponent {
 
   focusArea(x, y, w, h, onlyHorizontal, centerOnIt) {
     // Zoom so that the area fills the screen
+    const ratio = this.pixelW / this.pixelH;
+    mat3.identity(this.transform);
     const reqZoomFactor = Math.min(
-      this.width / (this.posOnScreen([x + w, y])[0] - this.posOnScreen([x, y])[0]),
+      this.width / ((this.posOnScreen([x + w, y])[0] - this.posOnScreen([x, y])[0]) * ratio),
       onlyHorizontal ? Infinity : (this.height / (this.posOnScreen([x, y + h])[1] - this.posOnScreen([x, y])[1])));
-    mat3.scale(this.transform, this.transform, [reqZoomFactor, reqZoomFactor]);
+    mat3.scale(this.transform, this.transform, [reqZoomFactor * ratio, reqZoomFactor]);
     if (!centerOnIt) this.ensureTransformInVisibleArea();
     else this.ensureTransformInArea({ x0: x, y0: y, x1: x + w, y1: y + h })
   }

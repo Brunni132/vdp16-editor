@@ -134,5 +134,5 @@ updateGameResourceData()
   .then(() => updateMapBitmap())
   .then(() => updateGameCode())
   .then(() => {
-    onSelectController('maps', element('#maps-button'));
+    onSelectController('code', element('#code-button'));
   });
