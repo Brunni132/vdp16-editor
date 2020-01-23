@@ -1,0 +1,53 @@
+import {gameResourceData, makeRenameOperation, mapNamed, runOperation} from "../api";
+import {Controller} from "../controller";
+import {IMAGE_UPDATE_DELAY, updateListCombo} from "../page-utils";
+
+export class ImageEditorController extends Controller {
+
+  buildIndicatorsArray(key, fixedProps = {}) {
+    const items = gameResourceData[key];
+    const mapper = key => ({
+      ...items[key],
+      text: key,
+      selected: key === this.selectedItemName,
+      indType: 'item',
+      ...fixedProps
+    });
+    // In focused mode, return only one element with focused: true (used for displayed focused-mode-only indicators)
+    if (this.focusedMode) return Object.keys(items).filter(k => k === this.selectedItemName).map(mapper);
+    // Else all indicators, with highlighted property (used only in "overworld" mode, i.e. not in map-object mode)
+    return Object.keys(items).map(key => ({
+      ...mapper(key),
+      highlighted: this.tool === 'select' && key === this.selectedItemName,
+    }));
+  }
+
+  updateName(controlClass, itemType) {
+    // No change?
+    const newName = this.element(controlClass).value, prevName = this.selectedItemName;
+    if (prevName === newName || !newName) return;
+    if (mapNamed(newName)) return alert(`There is already a ${itemType} named ${newName}. Please choose another name.`);
+    this.selectedItemName = newName;
+    runOperation(makeRenameOperation(itemType, prevName, newName));
+  }
+
+  static updatePaletteList(element) {
+    updateListCombo(element, 'pals');
+  }
+
+  static updateTilesetList(element) {
+    updateListCombo(element, 'sprites');
+  }
+
+  // ------------------------------ OVERRIDE ---------------------------------
+  onBlur() {
+    if (this.timer) clearInterval(this.timer);
+    this.timer = null;
+  }
+
+  onFocus() {
+    if (!this.timer) this.timer = setInterval(() => this.onPeriodicRender(), IMAGE_UPDATE_DELAY);
+  }
+
+  onPeriodicRender() {}
+}
