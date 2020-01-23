@@ -288,9 +288,13 @@ export class MapsController extends ImageEditorController {
   }
 
   onFocusItem(indicator) {
-    const { type } = mapNamed(this.selectedItemName);
+    const { type, til } = mapNamed(this.selectedItemName);
     if (type !== 'map') {
       return alert('Unable to edit an object list directly. These are meant to be used in combination with a tilemap. Double-click on a map, then from the plane list, add this object list.');
+    }
+    const { tw, th } = spriteNamed(til);
+    if (!tw || !th) {
+      return alert(`The sprite ${til} is not a tileset. Go to SPRITES, select ${til} and set its TW/TH to the appropriate tile size.`);
     }
     this.focusedMode = true;
     this.planeSelector.clearPlanes();
