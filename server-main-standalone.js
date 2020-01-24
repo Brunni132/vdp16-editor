@@ -9,11 +9,11 @@ const gameDataRouter = require('./server-javascripts/game-data-route');
 
 const app = express();
 const port = 3000;
-let openUrls = false;
+let openUrls = true;
 
 const readConfigOptions = () => {
   process.argv.slice(2).forEach((v) => {
-    if (/open/.test(v)) openUrls = true;
+    if (/no-open/.test(v)) openUrls = false;
     else console.error(`Unrecognized argument ${v}`);
   });
 };
@@ -24,7 +24,7 @@ const configureWebpackForGame = () => {
 
   // reload=true:Enable auto reloading when changing JS files or content
   // timeout=1000:Time from disconnecting from server to reconnecting
-  config.entry.app.unshift('webpack-hot-middleware/client?reload=true&timeout=1000');
+  // config.entry.app.unshift('webpack-hot-middleware/client?reload=true&timeout=1000');
   config.plugins.push(new webpack.HotModuleReplacementPlugin());
 
   // Webpack + middlewares for hot reloading
@@ -38,20 +38,11 @@ const configureWebpackForGame = () => {
   app.use(express.static('./'));
 };
 
-const configureWebpackForEditorMain = () => {
-  const compiler = webpack(require('./webpack.editorMain.dev.js'));
-  app.use(webpackDevMiddleware(compiler, {
-    publicPath: '/editor/client-javascripts'
-  }));
-  app.use('/editor/client-javascripts', express.static('./public/client-javascripts'));
-};
-
 const configureEditor = () => {
   const bodyParser = require('body-parser');
   const cookieParser = require('cookie-parser');
   const createError = require('http-errors');
   const logger = require('morgan');
-  const sassMiddleware = require('node-sass-middleware');
 
   // view engine setup
   app.set('views', path.join(__dirname, 'views'));
@@ -71,13 +62,6 @@ const configureEditor = () => {
   }, type: '*/*', limit: '4mb' }));
 
   app.use(cookieParser());
-  app.use(sassMiddleware({
-    src: path.join(__dirname, 'stylesheets'),
-    dest: path.join(__dirname, 'public/stylesheets'),
-    prefix: '/editor/stylesheets',
-    indentedSyntax: true, // true = .sass and false = .scss
-    sourceMap: true,
-  }));
   app.use('/editor', express.static(path.join(__dirname, 'public')));
   app.use('/editor', editorRouter);
   app.use('/game-data', gameDataRouter);
@@ -101,7 +85,6 @@ const configureEditor = () => {
 
 readConfigOptions();
 configureWebpackForGame();
-configureWebpackForEditorMain();
 configureEditor();
 
 app.listen(port, () => {
