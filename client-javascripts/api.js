@@ -298,7 +298,7 @@ function makeRestoreFunctionWithCurrentState(types) {
   };
 }
 
-function arrayForType(type) {
+export function arrayForType(type) {
 	if (type === 'palette') return gameResourceData.pals;
 	if (type === 'sprite') return gameResourceData.sprites;
 	if (type === 'map') return gameResourceData.maps;

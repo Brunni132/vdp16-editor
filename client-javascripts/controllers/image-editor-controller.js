@@ -1,4 +1,4 @@
-import {gameResourceData, makeRenameOperation, mapNamed, runOperation} from "../api";
+import {arrayForType, gameResourceData, makeRenameOperation, mapNamed, runOperation} from "../api";
 import {Controller} from "../controller";
 import {IMAGE_UPDATE_DELAY, updateListCombo} from "../page-utils";
 
@@ -27,7 +27,8 @@ export class ImageEditorController extends Controller {
     // No change?
     const newName = this.element(controlClass).value, prevName = this.selectedItemName;
     if (prevName === newName || !newName) return;
-    if (mapNamed(newName)) return alert(`There is already a ${itemType} named ${newName}. Please choose another name.`);
+    const array = arrayForType(itemType);
+    if (array[newName]) return alert(`There is already a ${itemType} named ${newName}. Please choose another name.`);
     this.selectedItemName = newName;
     runOperation(makeRenameOperation(itemType, prevName, newName));
   }

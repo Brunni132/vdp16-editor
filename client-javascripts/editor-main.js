@@ -2,7 +2,7 @@ import {CodeController} from "./controllers/code-controller";
 import {PalettesController} from "./controllers/palettes-controller";
 import {SpritesController} from "./controllers/sprites-controller";
 import {MapsController} from "./controllers/maps-controller";
-import {element, elements, isMac, setClass, unsetClass} from "./page-utils";
+import {element, elements, isInputComponent, isMac, setClass, unsetClass} from "./page-utils";
 import {registerTooltip} from "./components/tooltip";
 import {
   saveGameResources,
@@ -82,9 +82,9 @@ window.addEventListener('keydown', e => {
   } else {
     currentController && currentController.onKeyDown(e);
   }
-});
-window.addEventListener('resize', () => currentController && currentController.onResize());
-window.addEventListener('keydown', e => {
+  // Ignore keystrokes destined to input boxes
+  if (isInputComponent(e.target)) return;
+  // Undo/redo
   if (isMac()) {
     if (e.metaKey && e.shiftKey && e.key === 'z') {
       currentController && currentController.onRedo();
@@ -99,6 +99,7 @@ window.addEventListener('keydown', e => {
     }
   }
 });
+window.addEventListener('resize', () => currentController && currentController.onResize());
 document.addEventListener('cut', () => currentController && currentController.onCut());
 document.addEventListener('copy', () => currentController && currentController.onCopy());
 document.addEventListener('paste', () => currentController && currentController.onPaste());

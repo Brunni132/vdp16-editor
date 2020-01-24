@@ -130,8 +130,6 @@ export class ImageEditorComponent extends CanvasComponent {
   }
 
   onKeyDown(e) {
-    // Ignore keystrokes destined to input boxes
-    if (isInputComponent(e.target)) return true;
     if (e.key === 'Enter' && this.pastedImage) {
       this.bakePastedImage();
     } else if (e.key === 'Escape' && this.pastedImage) {
