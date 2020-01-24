@@ -4,19 +4,24 @@ import {TILE_MASK, TILE_PAL_MASK, TILE_PAL_SHIFT} from "./components/tile-select
 import {PNG} from "pngjs/browser";
 import {pixels32ToPng} from "./page-utils";
 
-function normalizePositions(list, width, height) {
+function normalizePositions(list, width, height, allowedProps) {
   Object.values(list).forEach(v => {
     if (v.x < 0) v.x = 0;
     if (v.y < 0) v.y = 0;
     if (v.x + v.width > width) v.w = width - v.x;
     if (v.y + v.height > height) v.h = height - v.y;
+    Object.keys(v).forEach(key => {
+      if (!allowedProps.includes(key)) delete v[key];
+    });
   });
 }
 
 function validateGameResources() {
-  normalizePositions(gameResourceData.pals, paletteBitmap.width, paletteBitmap.height);
-  normalizePositions(gameResourceData.sprites, spriteBitmap.width, spriteBitmap.height);
-  normalizePositions(gameResourceData.maps, mapBitmap.width, mapBitmap.height);
+  normalizePositions(gameResourceData.pals, paletteBitmap.width, paletteBitmap.height, ['x', 'y', 'w', 'h']);
+  normalizePositions(gameResourceData.sprites, spriteBitmap.width, spriteBitmap.height, ['x', 'y', 'w', 'h', 'pal', 'tw', 'th']);
+  normalizePositions(gameResourceData.maps, mapBitmap.width, mapBitmap.height, ['x', 'y', 'w', 'h', 'til', 'pal', 'type']);
+  delete gameResourceData.data;
+  gameResourceData.info = {};
 }
 
 async function postText(path, text) {
