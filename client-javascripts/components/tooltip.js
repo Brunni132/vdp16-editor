@@ -2,11 +2,10 @@ import {element, setClass, unsetClass} from "../page-utils";
 
 export function registerTooltip() {
   function hoveredTooltipItem(event) {
-    for (let i = event.path.length - 1; i >= 0; i--) {
-      const e = event.path[i];
-      if (e.dataset && e.dataset.tooltip) {
-        return e;
-      }
+    const path = event.composedPath();
+    for (let i = path.length - 1; i >= 0; i--) {
+      const e = path[i];
+      if (e.dataset && e.dataset.tooltip) return e;
     }
     return null;
   }
