@@ -4,7 +4,7 @@ import {
   itemsInRect,
   makeClearRectOperation,
   makeCreateOperation,
-  makeDeleteOperation,
+  makeDeleteOperation, makeFloodFillOperation,
   makeImageWriteOperation,
   makePenWriteOperation,
   makePropertyWriteOperation,
@@ -33,6 +33,7 @@ export class SpritesController extends ImageEditorController {
   }
 
   async onLoad() {
+    await super.onLoad();
     this.imageEditor = new ImageEditorComponent(this.element('.sprite-editor'), this.itemSelector);
     this.imageEditor.onselectitem = this.onSelectItem.bind(this);
     this.imageEditor.onedititem = this.onFocusItem.bind(this);
@@ -43,6 +44,7 @@ export class SpritesController extends ImageEditorController {
       cacheBitmap.setPixel(x, y, (this.currentPaletteArray[pixel] & 0xffffff) | (pixel !== 0 ? 0xff000000 : 0));
     this.imageEditor.onbakepastedimage = this.onBakePastedImage.bind(this);
     this.imageEditor.onrequestpathcolor = () => this.activeColor.selectedColorNo;
+    this.imageEditor.onothertool = this.onOtherTool.bind(this);
     this.imageEditor.onResize();
 
     this.imageImportComp = new ImageImportComponent('#sprites-body .toolbar');
@@ -233,9 +235,14 @@ export class SpritesController extends ImageEditorController {
       this.setClass('.sprite-import-dialog', 'hidden');
   }
 
-
   onPenWrite(path) {
     runOperation(makePenWriteOperation('sprite', this.imageEditor.onrequestpathcolor(), path));
+  }
+
+  onOtherTool(tool, x, y) {
+    if (tool === 'bucket') {
+      runOperation(makeFloodFillOperation('sprite', x, y, this.imageEditor.onrequestpathcolor(), this.imageEditor.visibleArea));
+    }
   }
 
   onRemoveSprite() {
@@ -265,7 +272,7 @@ export class SpritesController extends ImageEditorController {
 
   setTool(tool) {
     // Cannot use hidden tool
-    if (this.hasClass(`.${tool}-button`, 'hidden') || this.tool === tool) return;
+    if (this.hasClass(`.${tool}-button`, 'hidden') || this.element(`.${tool}-button`).disabled || this.tool === tool) return;
     // Cancel edit mode
     if (tool === 'select' && this.focusedMode) {
       this.focusedMode = false;
@@ -304,6 +311,7 @@ export class SpritesController extends ImageEditorController {
     this.setClass('.edition-panel', 'hidden', panel !== 'edition');
     this.setClass('.default-panel', 'hidden', panel !== 'default');
     //this.setClass('.palette-color-selector', 'hidden', !['pen', 'eyedropper', 'bucket'].includes(this.tool));
+    this.element('.bucket-button').disabled = !this.focusedMode;
     this.element('.create-button').disabled = this.tool !== 'rect';
     this.activeColor.setColors32(this.currentPaletteArray);
   }

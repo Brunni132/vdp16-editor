@@ -24,7 +24,7 @@ export class CanvasComponent extends Component {
 		this.transform = mat3.create();
 		this.lastTime = new Date().getTime();
 		mat3.identity(this.transform);
-		this.canvas.onmousewheel = e => this.onMouseWheel(e, this.mouseClientPos(e));
+		this.canvas.onwheel = e => this.onMouseWheel(e, this.mouseClientPos(e));
 		this.canvas.ondblclick = e => this.onDoubleClick(e, this.mouseClientPos(e));
 		this.canvas.onmousedown = e => this.onMouseDown(e, this.mouseClientPos(e));
 		this.canvas.onmousemove = e => this.onMouseMove(e, this.mouseClientPos(e));

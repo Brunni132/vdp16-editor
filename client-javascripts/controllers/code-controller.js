@@ -1,5 +1,6 @@
 import {Controller} from "../controller";
 import {gameCode, postGameCode} from "../api";
+import {saveGame} from "../editor-main";
 
 export class CodeController extends Controller {
   constructor() {
@@ -31,7 +32,7 @@ export class CodeController extends Controller {
   // ------------------------------ OVERRIDE ---------------------------------
   async onLoad() {
     this.addTabSupportToTextArea(this.getCodeBox());
-    this.element('.save-button').onclick = () => this.saveCode();
+    this.element('.save-button').onclick = saveGame;
     this.getCodeBox().value = gameCode;
   }
 

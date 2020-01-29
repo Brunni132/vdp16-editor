@@ -54,7 +54,7 @@ async function runGame() {
   window.open('http://localhost:3000/', 'game');
 }
 
-async function saveGame() {
+export async function saveGame() {
   try {
     setStatusText(`Saving game…`);
     for (let c of Object.values(controllers)) await c.willSaveTheGame();
@@ -126,7 +126,7 @@ element('.top-menu').addEventListener('mouseout', () => {
   rect.style.left = rect.style.width = rect.style.top = rect.style.height = '0';
 });
 
-element('#game-button').addEventListener('click', runGame);
+element('#game-button').onclick = runGame;
 
 // Load data and save initial undo steps
 updateGameResourceData()

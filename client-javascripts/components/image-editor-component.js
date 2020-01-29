@@ -52,6 +52,8 @@ export class ImageEditorComponent extends CanvasComponent {
 		this.onmoveselect = null;
 		// Called with (x, y) when tool is 'place'
 		this.onplacetool = null;
+		// Called on click with any other tool
+		this.onothertool = null;
     this.brushBitmap = null;
     this.visibleArea = makeRectangle();
     this.tool = 'select';
@@ -526,6 +528,9 @@ export class ImageEditorComponent extends CanvasComponent {
 			this.ondrawpixel(this.cacheBitmap, pos[0] - this.visibleArea.x0, pos[1] - this.visibleArea.y0, this.onrequestpathcolor());
     } else if (this.tool === 'select') {
       this.onClick(e, mousePos);
+    } else {
+      const pos = floorPos(this.posInTransformedImageClamped(mousePos));
+      this.onothertool && this.onothertool(this.tool, pos[0], pos[1]);
     }
   }
 

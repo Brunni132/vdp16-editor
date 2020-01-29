@@ -5,7 +5,7 @@ let currentClipboardItem = null;
 
 export function copyToClipboard(type, indicator, width, height, pixels, pixelsForClipboard) {
   currentClipboardItem = { type, indicator, width, height, pixels };
-  if (!pixelsForClipboard) return;
+  if (!pixelsForClipboard || typeof ClipboardItem === 'undefined' || !navigator || !navigator.clipboard || !navigator.clipboard.write) return;
 
   // Write as PNG to the clipboard
   const png = new PNG({width, height});

@@ -27,6 +27,7 @@ export class PalettesController extends ImageEditorController {
   }
 
   async onLoad() {
+    await super.onLoad();
     this.imageEditor = new ImageEditorComponent(this.element('.palette-editor'), this.itemSelector);
     this.imageEditor.panMode = 'scroll';
     this.imageEditor.onselectitem = this.onSelectItem.bind(this);

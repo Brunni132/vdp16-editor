@@ -332,6 +332,30 @@ export function makePenWriteMulticolorOperation(type, pathList) {
   };
 }
 
+export function makeFloodFillOperation(type, x, y, color, visibleArea) {
+  return {
+    type,
+    execute: () => {
+      const bitmap = bitmapForType(type);
+      const targetColor = bitmap.getPixel(x, y);
+      const ops = [{x, y}];
+      let current;
+      while ((current = ops.pop())) {
+        const {x, y} = current;
+        const pixel = bitmap.getPixel(x, y);
+        if (x >= visibleArea.x0 && x < visibleArea.x1 && y >= visibleArea.y0 && y < visibleArea.y1 && pixel === targetColor) {
+          bitmap.setPixel(x, y, color);
+
+          ops.unshift({x: x + 1, y: y});
+          ops.unshift({x: x - 1, y: y});
+          ops.unshift({x: x, y: y + 1});
+          ops.unshift({x: x, y: y - 1});
+        }
+      }
+    }
+  };
+}
+
 export function makeClearRectOperation(type, rect) {
   return {
     type,

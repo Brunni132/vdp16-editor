@@ -36,6 +36,7 @@ export class MapsController extends ImageEditorController {
 
   // ------------------------------ OVERRIDE ---------------------------------
   async onLoad() {
+    await super.onLoad();
     this.imageEditor = new ImageEditorComponent(this.element('.map-editor'), this.itemSelector);
     this.imageEditor.onselectitem = this.onSelectItem.bind(this);
     this.imageEditor.onedititem = this.onFocusItem.bind(this);

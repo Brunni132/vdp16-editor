@@ -1,6 +1,7 @@
 import {element, setClass, unsetClass} from "./page-utils";
 import {Component} from "./component";
 import {g_undoBuffer} from "./api";
+import {saveGame} from "./editor-main";
 
 let statusTextTimer;
 
@@ -30,7 +31,9 @@ export class Controller extends Component {
   }
   async willSaveTheGame() {}
 
-  async onLoad() {}
+  async onLoad() {
+    this.element('.save-button').onclick = saveGame;
+  }
   // Focus/blur indicate that the view is active/inactive while shown on the screen
   // willBecomeActive/inactive indicate that the controller is shown or not
   onBlur() {}
