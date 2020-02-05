@@ -25,7 +25,8 @@ export class CodeController extends Controller {
 
   async saveCode() {
     const code = this.getCodeBox().value;
-    if (!code) return;
+    if (!code || this.initialCode === code) return;
+    this.initialCode = code;
     await postGameCode(code);
   }
 
@@ -34,6 +35,7 @@ export class CodeController extends Controller {
     this.addTabSupportToTextArea(this.getCodeBox());
     this.element('.save-button').onclick = saveGame;
     this.getCodeBox().value = gameCode;
+    this.initialCode = gameCode;
   }
 
   onFocus() {
