@@ -70,6 +70,7 @@ export class PalettesController extends ImageEditorController {
   onChangeState() {
     if (!paletteNamed(this.selectedItemName)) this.selectedItemName = null;
     this.updateEditor();
+    this.imageEditor.onChangeState(state);
     this.imageEditor.notifyBitmapImageChanged();
   }
 
@@ -121,7 +122,7 @@ export class PalettesController extends ImageEditorController {
   // ------------------------------ PRIVATE ---------------------------------
   onBakePastedImage(image) {
     const overlaps = itemsInRect(gameResourceData.pals, makeRectangleWH(image.x, image.y, image.width, image.height));
-    if (overlaps.length > 0 &&
+    if (overlaps.length > 0 && image.indicator &&
       !confirm(`The position where you are pasting the palette overlaps with ${overlaps}. Continue?`)) return true;
 
     runOperation(makeImageWriteOperation('palette', image, this.imageEditor.visibleArea));

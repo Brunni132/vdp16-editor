@@ -115,6 +115,7 @@ export class MapsController extends ImageEditorController {
   onChangeState(state) {
     if (!mapNamed(this.selectedItemName)) this.selectedItemName = null;
     this.updateEditor();
+    this.imageEditor.onChangeState(state);
     this.imageEditor.notifyBitmapImageChanged();
     this.tileSelector.notifyBitmapImageChanged();
     this.updateBrushRender();
@@ -184,7 +185,7 @@ export class MapsController extends ImageEditorController {
 
 	onBakePastedImage(image) {
     const overlaps = itemsInRect(gameResourceData.maps, makeRectangleWH(image.x, image.y, image.width, image.height));
-    if (overlaps.length > 0 &&
+    if (overlaps.length > 0 && image.indicator &&
       !confirm(`The position where you are pasting the map overlaps with ${overlaps}. If two maps overlap, editing one will inadvertently replace part of the other.`)) return true;
 
     const ops = [makeImageWriteOperation('map', image, this.imageEditor.visibleArea)];

@@ -94,6 +94,7 @@ export class SpritesController extends ImageEditorController {
   onChangeState(state) {
     if (!spriteNamed(this.selectedItemName)) this.selectedItemName = null;
     this.updateEditor();
+    this.imageEditor.onChangeState(state);
     this.imageEditor.notifyBitmapImageChanged();
   }
 
@@ -166,7 +167,7 @@ export class SpritesController extends ImageEditorController {
   onBakePastedImage(image) {
     if (!this.focusedMode) {
       const overlaps = itemsInRect(gameResourceData.sprites, makeRectangleWH(image.x, image.y, image.width, image.height));
-      if (overlaps.length > 0 &&
+      if (overlaps.length > 0 && image.indicator &&
         !confirm(`The position where you are pasting the sprite overlaps with ${overlaps}. Continue?`)) return true;
     }
 

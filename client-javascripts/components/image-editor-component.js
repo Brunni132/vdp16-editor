@@ -150,6 +150,10 @@ export class ImageEditorComponent extends CanvasComponent {
     return true;
   }
 
+  onChangeState(state) {
+    this.cancelPaste();
+  }
+
   // Image: {x, y, width, height, pixels}
   pasteImage(image) {
     if (image.width > this.visibleArea.width || image.height > this.visibleArea.height) {
