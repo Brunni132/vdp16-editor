@@ -75,29 +75,28 @@ window.addEventListener('keydown', e => {
   // Ctrl+R (run)
   if ((isMac() ? e.ctrlKey : e.altKey) && e.key === 'r') {
     runGame();
-    e.preventDefault();
+    return e.preventDefault();
   } else if ((isMac() ? e.metaKey : e.ctrlKey) && e.key === 's') {
     saveGame();
-    e.preventDefault();
-  } else {
-    currentController && currentController.onKeyDown(e);
+    return e.preventDefault();
   }
   // Ignore keystrokes destined to input boxes
   if (isInputComponent(e.target)) return;
   // Undo/redo
   if (isMac()) {
     if (e.metaKey && e.shiftKey && e.key === 'z') {
-      currentController && currentController.onRedo();
+      return currentController && currentController.onRedo();
     } else if (e.metaKey && e.key === 'z') {
-      currentController && currentController.onUndo();
+      return currentController && currentController.onUndo();
     }
   } else if (e.ctrlKey) {
     if (e.ctrlKey && e.key === 'z') {
-      currentController && currentController.onUndo();
+      return currentController && currentController.onUndo();
     } else if (e.ctrlKey && e.key === 'y') {
-      currentController && currentController.onRedo();
+      return currentController && currentController.onRedo();
     }
   }
+  currentController && currentController.onKeyDown(e);
 });
 window.addEventListener('resize', () => currentController && currentController.onResize());
 document.addEventListener('cut', () => currentController && currentController.onCut());
