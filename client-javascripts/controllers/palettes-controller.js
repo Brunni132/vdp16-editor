@@ -2,19 +2,20 @@ import {ImageEditorComponent} from "../components/image-editor-component";
 import {
   gameResourceData,
   itemsInRect,
-  makeClearRectOperation,
+  makeClearRectOperation, makeCreateOperation, makeDeleteOperation,
   makeImageWriteOperation,
   makePenWriteOperation,
   makePropertyWriteOperation,
   paletteBitmap,
   paletteNamed,
-  runOperation,
+  runOperation, spriteNamed,
 } from "../api";
 import {ColorSelectorComponent} from "../components/color-selector-component";
 import {ImageImportComponent} from "../components/image-import-component";
 import {copyToClipboard, getClipboardData} from "../clipboard";
 import {ImageEditorController} from "./image-editor-controller";
 import {makeRectangleWH} from "../math-utils";
+import {showYesNoDialog} from "../components/yesno-dialog-component";
 
 export class PalettesController extends ImageEditorController {
   constructor() {
@@ -54,6 +55,7 @@ export class PalettesController extends ImageEditorController {
     });
     this.element('.palette-name').oninput = () => this.updateName('.palette-name', 'palette');
     this.element('.edit-palette-button').onclick = () => this.onFocusItem(this.imageEditor.getSelectedIndicator());
+    this.element('.remove-palette-button').onclick = this.onRemovePalette.bind(this);
 
     this.setTool('select');
   }
@@ -67,7 +69,7 @@ export class PalettesController extends ImageEditorController {
     this.imageEditor.render();
   }
 
-  onChangeState() {
+  onChangeState(state) {
     if (!paletteNamed(this.selectedItemName)) this.selectedItemName = null;
     this.updateEditor();
     this.imageEditor.onChangeState(state);
@@ -81,13 +83,23 @@ export class PalettesController extends ImageEditorController {
     for (let y = rect.y0; y < rect.y1; y++)
       for (let x = rect.x0; x < rect.x1; x++, i++)
         pixels[i] = paletteBitmap.getPixel(x, y);
-    copyToClipboard('palette', null, rect.x1 - rect.x0, rect.y1 - rect.y0, pixels, pixels);
+    copyToClipboard('palette', indicator, rect.x1 - rect.x0, rect.y1 - rect.y0, pixels, pixels);
     return {indicator, rect};
   }
 
   onCut() {
-    const { rect } = this.onCopy();
+    const { rect, indicator } = this.onCopy();
     runOperation(makeClearRectOperation('palette', rect));
+    // Do not allow a situation where we have no palette, since we don't have a way to create them
+    if (indicator && Object.keys(gameResourceData.pals).length > 1) {
+      runOperation(makeDeleteOperation('palette', indicator.text));
+    }
+  }
+
+  onPaste() {
+    const item = getClipboardData('palette');
+    if (!item) return;
+    this.imageEditor.pasteImage({ ...this.imageEditor.getSuggestedPastePosition(), width: item.width, height: item.height, pixels: item.pixels, indicator: item.indicator });
   }
 
   onKeyDown(e) {
@@ -108,12 +120,6 @@ export class PalettesController extends ImageEditorController {
     }
   }
 
-  onPaste() {
-    const item = getClipboardData('palette');
-    if (!item) return;
-    this.imageEditor.pasteImage({ ...this.imageEditor.getSuggestedPastePosition(), width: item.width, height: item.height, pixels: item.pixels });
-  }
-
   onResize() {
     this.imageEditor.onResize();
     this.onPeriodicRender();
@@ -126,6 +132,8 @@ export class PalettesController extends ImageEditorController {
       !confirm(`The position where you are pasting the palette overlaps with ${overlaps}. Continue?`)) return true;
 
     runOperation(makeImageWriteOperation('palette', image, this.imageEditor.visibleArea));
+    // Upon paste, create the palette indicator
+    if (image.indicator) runOperation(makeCreateOperation('palette', image.indicator.text, {...image.indicator}));
   }
 
   onFocusItem(indicator) {
@@ -163,6 +171,21 @@ export class PalettesController extends ImageEditorController {
 
   onSwitchedToSecondaryTool(state) {
     this.setTool(state ? 'eyedropper' : 'pen');
+  }
+
+  onRemovePalette() {
+    // Do not allow a situation where we have no palette, since we don't have a way to create them
+    if (Object.keys(gameResourceData.pals).length <= 1) return;
+    showYesNoDialog({
+      title: 'Delete palette',
+      text: '<p>Also clear graphics contents beneath palette?</p><p>Note that you can also use Ctrl+X (cut) for this operation. Paste it (Ctrl+V) afterwards, which can be useful to move the palette around with its contents.</p>',
+      onYes: () => {
+        const pal = paletteNamed(this.selectedItemName);
+        runOperation(makeDeleteOperation('palette', this.selectedItemName));
+        runOperation(makeClearRectOperation('palette', { x0: pal.x, y0: pal.y, x1: pal.x + pal.w, y1: pal.y + pal.h }));
+      },
+      onNo: () => runOperation(makeDeleteOperation('palette', this.selectedItemName))
+    });
   }
 
   setTool(tool) {

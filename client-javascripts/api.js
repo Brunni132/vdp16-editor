@@ -458,10 +458,11 @@ export function cloneBitmapFromArea(type, {x, y, w, h}) {
   };
 }
 
-// Can run one operation or an array of linked operations (undone/redone atomically)
-export function runOperation(operations) {
-  if (!operations) return;
-  if (!Array.isArray(operations)) operations = [operations];
+let pendingOperations = [];
+
+function runPendingOperations() {
+  const operations = pendingOperations;
+  pendingOperations = [];
   const step = {
     execute: () => operations.forEach(o => o.execute()),
     reverse: makeRestoreFunctionWithCurrentState(operations.map(o => o.type))
@@ -470,6 +471,19 @@ export function runOperation(operations) {
   step.execute();
   // Not really a restore, but we just ask the controller to update everything
   restoreFunction();
+}
+
+// Can run one operation or an array of linked operations (undone/redone atomically)
+export function runOperation(operation) {
+  if (!operation) return;
+  if (Array.isArray(operation)) {
+    operation.forEach(op => runOperation(op));
+    return;
+  }
+
+  const hadPendingOp = pendingOperations.length > 0;
+  pendingOperations.push(operation);
+  if (!hadPendingOp) setTimeout(runPendingOperations, 0);
 }
 
 export let gameCode, gameResourceData, paletteBitmap, spriteBitmap, mapBitmap;

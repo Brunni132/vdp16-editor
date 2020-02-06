@@ -78,17 +78,15 @@ export class MapsController extends ImageEditorController {
     ['x', 'y', 'w', 'h', 'til', 'pal', 'type'].forEach(prop => {
       this.element(`.map-${prop}`).oninput = () => {
         let value = this.element(`.map-${prop}`).value;
-        const ops = [];
         if (!['pal', 'til', 'type'].includes(prop)) {
           value = parseInt(value);
         }
-        ops.push(makePropertyWriteOperation('map', this.selectedItemName, prop, value));
+        runOperation(makePropertyWriteOperation('map', this.selectedItemName, prop, value));
         // On change tileset, choose the appropriate map automatically
         if (prop === 'til') {
           const pal = spriteNamed(value).pal;
-          ops.push(makePropertyWriteOperation('map', this.selectedItemName, 'pal', pal));
+          runOperation(makePropertyWriteOperation('map', this.selectedItemName, 'pal', pal));
         }
-        runOperation(ops);
       };
     });
     this.element('.map-name').oninput = () => this.updateName('.map-name', 'map');
@@ -147,13 +145,13 @@ export class MapsController extends ImageEditorController {
       const copiedIndices = this.onCopy();
       copiedIndices.sort().reverse().forEach(i => this.objList.splice(i, 1));
       runOperation(makeObjectChangeOperation(this.getPlaneInfo(this.activePlane).mapName, this.objList));
+      return;
     }
 
     // Map (overview) mode
     const { rect, indicator } = this.onCopy();
-    const ops = [makeClearRectOperation('map', rect)];
-    if (indicator) ops.push(makeDeleteOperation('map', indicator.text));
-    runOperation(ops);
+    runOperation(makeClearRectOperation('map', rect));
+    if (indicator) runOperation(makeDeleteOperation('map', indicator.text));
   }
 
 	onPaste() {
@@ -167,6 +165,7 @@ export class MapsController extends ImageEditorController {
       runOperation(makeObjectChangeOperation(this.getPlaneInfo(this.activePlane).mapName, this.objList));
       this.selectedIndices = range(initialIndex, this.objList.length);
       this.updateEditor();
+      return;
     }
 
     const item = getClipboardData('map');
@@ -188,10 +187,9 @@ export class MapsController extends ImageEditorController {
     if (overlaps.length > 0 && image.indicator &&
       !confirm(`The position where you are pasting the map overlaps with ${overlaps}. If two maps overlap, editing one will inadvertently replace part of the other.`)) return true;
 
-    const ops = [makeImageWriteOperation('map', image, this.imageEditor.visibleArea)];
+    runOperation(makeImageWriteOperation('map', image, this.imageEditor.visibleArea));
 		// Upon paste, create the map indicator
-		if (image.indicator) ops.push(makeCreateOperation('map', image.indicator.text, {...image.indicator}));
-    runOperation(ops);
+		if (image.indicator) runOperation(makeCreateOperation('map', image.indicator.text, {...image.indicator}));
 	}
 
   onKeyDown(e) {
@@ -415,10 +413,8 @@ export class MapsController extends ImageEditorController {
 			text: '<p>Also clear graphics contents beneath map?</p><p>Note that you can also use Ctrl+X (cut) for this operation. Paste it (Ctrl+V) afterwards, which can be useful to move the map around with its contents.</p>',
 			onYes: () => {
 				const map = mapNamed(this.selectedItemName);
-				runOperation([
-					makeDeleteOperation('map', this.selectedItemName),
-					makeClearRectOperation('map', { x0: map.x, y0: map.y, x1: map.x + map.w, y1: map.y + map.h })
-				]);
+				runOperation(makeDeleteOperation('map', this.selectedItemName));
+				runOperation(makeClearRectOperation('map', { x0: map.x, y0: map.y, x1: map.x + map.w, y1: map.y + map.h }));
 			},
 			onNo: () => runOperation(makeDeleteOperation('map', this.selectedItemName))
 		});

@@ -114,9 +114,8 @@ export class SpritesController extends ImageEditorController {
 
   onCut() {
     const { rect, indicator } = this.onCopy();
-    const ops = [makeClearRectOperation('sprite', rect)];
-    if (indicator) ops.push(makeDeleteOperation('sprite', indicator.text));
-    runOperation(ops);
+    runOperation(makeClearRectOperation('sprite', rect));
+    if (indicator) runOperation(makeDeleteOperation('sprite', indicator.text));
   }
 
 	onPaste() {
@@ -171,10 +170,9 @@ export class SpritesController extends ImageEditorController {
         !confirm(`The position where you are pasting the sprite overlaps with ${overlaps}. Continue?`)) return true;
     }
 
-    const ops = [makeImageWriteOperation('sprite', image, this.imageEditor.visibleArea)];
+    runOperation(makeImageWriteOperation('sprite', image, this.imageEditor.visibleArea));
     // Upon paste, create the sprite indicator
-    if (image.indicator) ops.push(makeCreateOperation('sprite', image.indicator.text, {...image.indicator}));
-    runOperation(ops);
+    if (image.indicator) runOperation(makeCreateOperation('sprite', image.indicator.text, {...image.indicator}));
   }
 
   onCreateSprite() {
@@ -224,7 +222,7 @@ export class SpritesController extends ImageEditorController {
         height: png.height,
         pixels
       };
-      if (operation) runOperation(operation);
+      runOperation(operation);
       // Create a sprite too in selection mode
       if (!this.focusedMode) {
         image.indicator = { x: 0, y: 0, w: png.width, h: png.height, pal: palName, text: fileName };
@@ -252,10 +250,8 @@ export class SpritesController extends ImageEditorController {
       text: '<p>Also clear graphics contents beneath sprite?</p><p>Note that you can also use Ctrl+X (cut) for this operation. Paste it (Ctrl+V) afterwards, which can be useful to move the sprite around with its contents.</p>',
       onYes: () => {
         const sprite = spriteNamed(this.selectedItemName);
-        runOperation([
-          makeDeleteOperation('sprite', this.selectedItemName),
-          makeClearRectOperation('sprite', { x0: sprite.x, y0: sprite.y, x1: sprite.x + sprite.w, y1: sprite.y + sprite.h })
-        ]);
+        runOperation(makeDeleteOperation('sprite', this.selectedItemName));
+        runOperation(makeClearRectOperation('sprite', { x0: sprite.x, y0: sprite.y, x1: sprite.x + sprite.w, y1: sprite.y + sprite.h }));
       },
       onNo: () => runOperation(makeDeleteOperation('sprite', this.selectedItemName))
     });
