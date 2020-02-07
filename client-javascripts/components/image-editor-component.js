@@ -19,6 +19,7 @@ import {
 } from "./canvas-component";
 import {makeRectangle, makeSelectionRectangle} from "../math-utils";
 import {setStatusText} from "../controller";
+import {showMultiSelectDialog} from "./multiselect-dialog-component";
 
 export class ImageEditorComponent extends CanvasComponent {
   constructor(canvas, parentSelector) {
@@ -403,13 +404,12 @@ export class ImageEditorComponent extends CanvasComponent {
   }
 
   indicatorAtPosition(x, y) {
-    for (let i = this.bitmapImage.indicators.length - 1; i >= 0; i--) {
-      const indicator = this.bitmapImage.indicators[i];
-      if (x >= indicator.x && y >= indicator.y && x < indicator.x + indicator.w && y < indicator.y + indicator.h) {
-        return indicator;
-      }
-    }
-    return null;
+    return this.indicatorsAtPosition(x, y)[0];
+  }
+
+  indicatorsAtPosition(x, y) {
+    return [...this.bitmapImage.indicators].reverse().filter(i =>
+      x >= i.x && y >= i.y && x < i.x + i.w && y < i.y + i.h);
   }
 
   indicatorsInRect(rect) {
@@ -439,18 +439,6 @@ export class ImageEditorComponent extends CanvasComponent {
 			this.ondrawpixel(this.cacheBitmap, prev[0] - this.visibleArea.x0, prev[1] - this.visibleArea.y0, this.onrequestpathcolor());
 		}
 	}
-
-  onClick(e, mousePos) {
-    const imagePosition = this.posInTransformedImage(mousePos);
-    const imagePixelX = imagePosition[0] | 0, imagePixelY = imagePosition[1] | 0;
-    if (!this.inVisibleArea(imagePixelX, imagePixelY)) {
-      return this.onselectitem && this.onselectitem(null);
-    }
-    if (this.tool === 'select') {
-      const indicator = this.indicatorAtPosition(imagePosition[0], imagePosition[1]);
-      if (this.onselectitem) this.onselectitem(indicator);
-    }
-  }
 
   onDoubleClick(e, mousePos) {
     if (this.tool === 'select') {
@@ -531,7 +519,17 @@ export class ImageEditorComponent extends CanvasComponent {
 			this.writePathBuffer = [...pos];
 			this.ondrawpixel(this.cacheBitmap, pos[0] - this.visibleArea.x0, pos[1] - this.visibleArea.y0, this.onrequestpathcolor());
     } else if (this.tool === 'select') {
-      this.onClick(e, mousePos);
+      const imagePosition = this.posInTransformedImage(mousePos);
+      const imagePixelX = imagePosition[0] | 0, imagePixelY = imagePosition[1] | 0;
+      if (!this.inVisibleArea(imagePixelX, imagePixelY)) {
+        return this.onselectitem(null);
+      }
+      const indicators = this.indicatorsAtPosition(imagePosition[0], imagePosition[1]);
+      if (indicators.length > 1) {
+        showMultiSelectDialog(indicators, i => this.onselectitem(indicators[i]));
+      } else {
+        this.onselectitem(indicators[0]);
+      }
     } else {
       const pos = floorPos(this.posInTransformedImageClamped(mousePos));
       this.onothertool && this.onothertool(this.tool, pos[0], pos[1]);

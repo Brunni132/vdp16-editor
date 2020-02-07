@@ -10,7 +10,7 @@ import {
   makeObjectChangeOperation,
   makePropertyWriteOperation,
   mapBitmap,
-  mapNamed,
+  mapNamed, paletteNamed,
   paletteSubarrayFromPaletteName,
   runOperation,
   spriteNamed
@@ -89,7 +89,7 @@ export class MapsController extends ImageEditorController {
         }
       };
     });
-    this.element('.map-name').oninput = () => this.updateName('.map-name', 'map');
+    this.configureRenamer('map', false);
     this.element('.edit-map-button').onclick = () => this.onFocusItem(this.imageEditor.getSelectedIndicator());
     this.element('.remove-map-button').onclick = this.onRemoveMap.bind(this);
     this.element('.create-button').onclick = this.onCreateMap.bind(this);
@@ -113,6 +113,10 @@ export class MapsController extends ImageEditorController {
   onChangeState(state) {
     if (!mapNamed(this.selectedItemName)) this.selectedItemName = null;
     this.updateEditor();
+    // Clear cached object list
+    if (this.selectedItemName) {
+      this.objList = this.getPlaneInfo(this.activePlane).objectList;
+    }
     this.imageEditor.onChangeState(state);
     this.imageEditor.notifyBitmapImageChanged();
     this.tileSelector.notifyBitmapImageChanged();
@@ -288,9 +292,12 @@ export class MapsController extends ImageEditorController {
   }
 
   onFocusItem(indicator) {
-    const { type, til } = mapNamed(this.selectedItemName);
+    const { type, til, pal } = mapNamed(this.selectedItemName);
     if (type !== 'map') {
       return alert('Unable to edit an object list directly. These are meant to be used in combination with a tilemap. Double-click on a map, then from the plane list, add this object list.');
+    }
+    if (!spriteNamed(til) || !paletteNamed(pal)) {
+      return alert('Please check that a tileset and palette have been properly assigned to this map');
     }
     const { tw, th } = spriteNamed(til);
     if (!tw || !th) {

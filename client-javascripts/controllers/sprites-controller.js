@@ -67,7 +67,7 @@ export class SpritesController extends ImageEditorController {
         runOperation(makePropertyWriteOperation('sprite', this.selectedItemName, prop, parseInt(value)));
       };
     });
-    this.element('.sprite-name').oninput = () => this.updateName('.sprite-name', 'sprite');
+    this.configureRenamer('sprite', true);
     this.element('.edit-sprite-button').onclick = () => this.onFocusItem(this.imageEditor.getSelectedIndicator());
     this.element('.remove-sprite-button').onclick = this.onRemoveSprite.bind(this);
 

@@ -53,7 +53,7 @@ export class PalettesController extends ImageEditorController {
       this.element(`.palette-${prop}`).oninput = () =>
         runOperation(makePropertyWriteOperation('palette', this.selectedItemName, prop, parseInt(this.element(`.palette-${prop}`).value)));
     });
-    this.element('.palette-name').oninput = () => this.updateName('.palette-name', 'palette');
+    this.configureRenamer('palette', true);
     this.element('.edit-palette-button').onclick = () => this.onFocusItem(this.imageEditor.getSelectedIndicator());
     this.element('.remove-palette-button').onclick = this.onRemovePalette.bind(this);
 

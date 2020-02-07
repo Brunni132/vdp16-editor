@@ -2,6 +2,8 @@ import {arrayForType, gameResourceData, makeRenameOperation, mapNamed, runOperat
 import {Controller} from "../controller";
 import {IMAGE_UPDATE_DELAY, updateListCombo} from "../page-utils";
 
+let didWarnFromChangingName = false;
+
 export class ImageEditorController extends Controller {
 
   buildIndicatorsArray(key, fixedProps = {}) {
@@ -39,6 +41,19 @@ export class ImageEditorController extends Controller {
 
   static updateTilesetList(element) {
     updateListCombo(element, 'sprites');
+  }
+
+  // Configures an element that should be called <type>-name
+  configureRenamer(type, warnAboutChanging) {
+    const el = this.element(`.${type}-name`);
+    el.oninput = () => this.updateName(`.${type}-name`, type);
+    if (warnAboutChanging) {
+      el.onfocus = () => {
+        if (didWarnFromChangingName) return;
+        didWarnFromChangingName = true;
+        alert(`Sprites and maps reference themselves by name. Therefore, changing the name of any resource requires updating the other sprite/maps one by one accordingly, or your game will not be able to draw them.`);
+      }
+    }
   }
 
   // ------------------------------ OVERRIDE ---------------------------------
