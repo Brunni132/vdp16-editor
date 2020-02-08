@@ -78,12 +78,12 @@ export class PalettesController extends ImageEditorController {
 
   onCopy() {
     const {indicator, rect} = this.imageEditor.onCopy();
-    const pixels = new Array((rect.x1 - rect.x0) * (rect.y1 - rect.y0));
+    const pixels = new Array(rect.width * rect.height);
     let i = 0;
     for (let y = rect.y0; y < rect.y1; y++)
       for (let x = rect.x0; x < rect.x1; x++, i++)
         pixels[i] = paletteBitmap.getPixel(x, y);
-    copyToClipboard('palette', indicator, rect.x1 - rect.x0, rect.y1 - rect.y0, pixels, pixels);
+    copyToClipboard('palette', indicator, rect.width, rect.height, pixels, { width: rect.width, height: rect.height, pixels });
     return {indicator, rect};
   }
 

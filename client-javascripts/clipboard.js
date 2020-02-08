@@ -3,13 +3,13 @@ import {pixels32ToPng} from "./page-utils";
 
 let currentClipboardItem = null;
 
-export function copyToClipboard(type, indicator, width, height, pixels, pixelsForClipboard) {
+export function copyToClipboard(type, indicator, width, height, pixels, clipboard = null) {
   currentClipboardItem = { type, indicator, width, height, pixels };
-  if (!pixelsForClipboard || typeof ClipboardItem === 'undefined' || !navigator || !navigator.clipboard || !navigator.clipboard.write) return;
+  if (!clipboard || typeof ClipboardItem === 'undefined' || !navigator || !navigator.clipboard || !navigator.clipboard.write) return;
 
   // Write as PNG to the clipboard
-  const png = new PNG({width, height});
-  pixels32ToPng(png.data, pixelsForClipboard);
+  const png = new PNG({width: clipboard.width, height: clipboard.height});
+  pixels32ToPng(png.data, clipboard.pixels);
 
   const blob = new Blob([PNG.sync.write(png)], {type : "image/png"});
   const cbItem = new ClipboardItem({ "image/png": blob });

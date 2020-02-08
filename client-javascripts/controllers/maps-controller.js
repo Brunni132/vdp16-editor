@@ -58,14 +58,14 @@ export class MapsController extends ImageEditorController {
     this.tileSelector.onselect = this.onTileSelected.bind(this);
 
     this.brushBitmap = new CanvasImageData(this.imageEditor.context, 0, 0);
-		this.imageEditor.brushBitmap = this.brushBitmap;
-		this.brushContents = null;
+    this.imageEditor.brushBitmap = this.brushBitmap;
+    this.brushContents = null;
 
     // Used in object mode
     this.objList = null;
     this.selectedIndices = [];
 
-		// Used in focused mode
+    // Used in focused mode
     this.planeSelector = new PlaneListComponent('.plane-list');
     this.planeSelector.onplanelistchange = this.onChangeState.bind(this);
     this.planeSelector.onactiveplanechange = this.onChangeActivePlane.bind(this);
@@ -98,7 +98,7 @@ export class MapsController extends ImageEditorController {
     this.setTool('select');
   }
 
-	onFocus() {
+  onFocus() {
     super.onFocus();
     ImageEditorController.updateTilesetList(this.element('.map-til'));
     ImageEditorController.updatePaletteList(this.element('.map-pal'));
@@ -114,7 +114,7 @@ export class MapsController extends ImageEditorController {
     if (!mapNamed(this.selectedItemName)) this.selectedItemName = null;
     this.updateEditor();
     // Clear cached object list
-    if (this.selectedItemName) {
+    if (this.focusedMode) {
       this.objList = this.getPlaneInfo(this.activePlane).objectList;
     }
     this.imageEditor.onChangeState(state);
@@ -123,7 +123,7 @@ export class MapsController extends ImageEditorController {
     this.updateBrushRender();
   }
 
-	onCopy() {
+  onCopy() {
     // Object mode
     if (this.objList) {
       if (!this.selectedIndices.length) return [];
@@ -133,16 +133,26 @@ export class MapsController extends ImageEditorController {
 
     // Map (overview) mode
     const {indicator, rect} = this.imageEditor.onCopy();
-    const pixels = new Array((rect.x1 - rect.x0) * (rect.y1 - rect.y0));
+    const pixels = new Array(rect.width * rect.height);
     let i = 0;
     for (let y = rect.y0; y < rect.y1; y++)
       for (let x = rect.x0; x < rect.x1; x++, i++)
         pixels[i] = mapBitmap.getPixel(x, y);
-    copyToClipboard('map', indicator, rect.x1 - rect.x0, rect.y1 - rect.y0, pixels);
+
+    if (indicator) {
+      const { tileset, paletteArray } = this.getPlaneInfo(indicator.text);
+      const clipboardBitmap = new CanvasImageData(this.imageEditor.context, rect.width * tileset.tw, rect.height * tileset.th);
+      for (let y = rect.y0; y < rect.y1; y++)
+        for (let x = rect.x0; x < rect.x1; x++)
+          drawTile32(clipboardBitmap, (x - rect.x0) * tileset.tw, (y - rect.y0) * tileset.th, paletteArray, tileset, mapBitmap.getPixel(x, y));
+      copyToClipboard('map', indicator, rect.width, rect.height, pixels, { width: clipboardBitmap.width, height: clipboardBitmap.height, pixels: clipboardBitmap.color32 });
+    } else {
+      copyToClipboard('map', indicator, rect.width, rect.height, pixels);
+    }
     return {indicator, rect};
   }
 
-	onCut() {
+  onCut() {
     // Object mode
     if (this.objList) {
       if (!this.selectedIndices.length) return;
@@ -158,7 +168,7 @@ export class MapsController extends ImageEditorController {
     if (indicator) runOperation(makeDeleteOperation('map', indicator.text));
   }
 
-	onPaste() {
+  onPaste() {
     // Object mode
     if (this.objList) {
       const item = getClipboardData('object');
@@ -177,8 +187,8 @@ export class MapsController extends ImageEditorController {
     this.imageEditor.pasteImage({ ...this.imageEditor.getSuggestedPastePosition(), width: item.width, height: item.height, pixels: item.pixels, indicator: item.indicator });
   }
 
-	// Avoid objects overlapping each other when pasted, etc.
-	findAcceptablePlaceForObject(obj) {
+  // Avoid objects overlapping each other when pasted, etc.
+  findAcceptablePlaceForObject(obj) {
     while (this.objList.find(o => obj.x === o.x && obj.y === o.y)) {
       obj.x += 3;
       obj.y += 3;
@@ -186,15 +196,15 @@ export class MapsController extends ImageEditorController {
     return obj;
   }
 
-	onBakePastedImage(image) {
+  onBakePastedImage(image) {
     const overlaps = itemsInRect(gameResourceData.maps, makeRectangleWH(image.x, image.y, image.width, image.height));
     if (overlaps.length > 0 && image.indicator &&
       !confirm(`The position where you are pasting the map overlaps with ${overlaps}. If two maps overlap, editing one will inadvertently replace part of the other.`)) return true;
 
     runOperation(makeImageWriteOperation('map', image, this.imageEditor.visibleArea));
-		// Upon paste, create the map indicator
-		if (image.indicator) runOperation(makeCreateOperation('map', image.indicator.text, {...image.indicator}));
-	}
+    // Upon paste, create the map indicator
+    if (image.indicator) runOperation(makeCreateOperation('map', image.indicator.text, {...image.indicator}));
+  }
 
   onKeyDown(e) {
     if (this.imageEditor.onKeyDown(e)) return;
@@ -208,10 +218,10 @@ export class MapsController extends ImageEditorController {
       if (e.key === 's' || e.key === 'Escape') this.setTool('select');
       if (e.key === 'i') this.imageImportComp.openDialog();
       if (e.key === '1') this.tileSelector.selectNextTile(-1);
-			if (e.key === '2') this.tileSelector.selectNextTile(1);
-			if (e.key === '3') this.tileSelector.selectNextPalette(-1);
-			if (e.key === '4') this.tileSelector.selectNextPalette(1);
-			if (e.key === '5') this.planeSelector.selectNextPlane(-1);
+      if (e.key === '2') this.tileSelector.selectNextTile(1);
+      if (e.key === '3') this.tileSelector.selectNextPalette(-1);
+      if (e.key === '4') this.tileSelector.selectNextPalette(1);
+      if (e.key === '5') this.planeSelector.selectNextPlane(-1);
       if (e.key === '6') this.planeSelector.selectNextPlane(1);
     }
   }
@@ -222,25 +232,25 @@ export class MapsController extends ImageEditorController {
   }
 
   // ------------------------------ PRIVATE ---------------------------------
-	clearBrush() {
-  	this.brushContents = null;
-  	this.brushBitmap.setSize(0, 0);
-	}
+  clearBrush() {
+    this.brushContents = null;
+    this.brushBitmap.setSize(0, 0);
+  }
 
-	copyMapDataToBrush(width, height, cells) {
-  	this.brushContents = { type: 'map', width, height, cells };
+  copyMapDataToBrush(width, height, cells) {
+    this.brushContents = { type: 'map', width, height, cells };
 
-		const { tileset, paletteArray } = this.getPlaneInfo(this.activePlane);
-		let cell = 0;
-		this.brushBitmap.setSize(this.imageEditor.context, width * tileset.tw, height * tileset.th);
-		for (let j = 0; j < height; j++)
-			for (let i = 0; i < width; i++, cell++)
-				drawTile32(this.brushBitmap, i * tileset.tw, j * tileset.th, paletteArray, tileset, cells[cell]);
-	}
+    const { tileset, paletteArray } = this.getPlaneInfo(this.activePlane);
+    let cell = 0;
+    this.brushBitmap.setSize(this.imageEditor.context, width * tileset.tw, height * tileset.th);
+    for (let j = 0; j < height; j++)
+      for (let i = 0; i < width; i++, cell++)
+        drawTile32(this.brushBitmap, i * tileset.tw, j * tileset.th, paletteArray, tileset, cells[cell]);
+  }
 
-	updateBrushRender() {
-  	if (this.brushContents) this.copyMapDataToBrush(this.brushContents.width, this.brushContents.height, this.brushContents.cells);
-	}
+  updateBrushRender() {
+    if (this.brushContents) this.copyMapDataToBrush(this.brushContents.width, this.brushContents.height, this.brushContents.cells);
+  }
 
   onBrushPasted(x, y) {
     if (!this.brushContents) return;
@@ -268,25 +278,27 @@ export class MapsController extends ImageEditorController {
     this.setTool(type === 'object' ? 'move' : 'brush');
   }
 
-  getPlaneInfo(planeNo) {
+  getPlaneInfo(planeNoOrName) {
     const self = this;
-    const { name } = this.planeList[planeNo];
-    const map = mapNamed(name);
+    if (typeof planeNoOrName === 'number') {
+      planeNoOrName = this.planeList[planeNoOrName].name;
+    }
+    const map = mapNamed(planeNoOrName);
     return {
-      mapName: name,
+      mapName: planeNoOrName,
       map: map.type === 'map' ? map : null,
       type: map.type,
       tilesetName: map.til,
       paletteName: map.pal,
       get tileset() { return spriteNamed(map.til); },
       get paletteArray() { return paletteSubarrayFromPaletteName(map.pal); },
-      get objectList() { return self.getObjectList(planeNo); }
+      get objectList() { return self.getObjectList(planeNoOrName); }
     };
   }
 
   // TODO Florian -- cache
-  getObjectList(planeNo) {
-    const map = mapNamed(this.planeList[planeNo].name);
+  getObjectList(name) {
+    const map = mapNamed(name);
     if (map.type !== 'object') return null;
     return mapBitmap.getObjectJSON(map.x, map.y, map.w, map.h);
   }
@@ -336,28 +348,28 @@ export class MapsController extends ImageEditorController {
   }
 
   onCloner(rect) {
-  	if (rect.width === 1 && rect.height === 1) {
-			this.tileSelector.selectTile(mapBitmap.getPixel(rect.x0, rect.y0));
-		} else {
-  		this.tileSelector.deselectTile();
-		}
+    if (rect.width === 1 && rect.height === 1) {
+      this.tileSelector.selectTile(mapBitmap.getPixel(rect.x0, rect.y0));
+    } else {
+      this.tileSelector.deselectTile();
+    }
 
-  	const cells = new Array(rect.width * rect.height);
-  	let cell = 0;
-			for (let j = 0; j < rect.height; j++)
-				for (let i = 0; i < rect.width; i++, cell++)
-					cells[cell] = mapBitmap.getPixel(rect.x0 + i, rect.y0 + j);
-		this.copyMapDataToBrush(rect.width, rect.height, cells);
+    const cells = new Array(rect.width * rect.height);
+    let cell = 0;
+      for (let j = 0; j < rect.height; j++)
+        for (let i = 0; i < rect.width; i++, cell++)
+          cells[cell] = mapBitmap.getPixel(rect.x0 + i, rect.y0 + j);
+    this.copyMapDataToBrush(rect.width, rect.height, cells);
   }
 
-	onTileSelected(width, height, cells) {
+  onTileSelected(width, height, cells) {
     if (this.getPlaneInfo(this.activePlane).type === 'map') {
       this.copyMapDataToBrush(width, height, cells);
     } else {
       this.setTool('place');
       this.copyMapDataToBrush(width, height, cells);
     }
-	}
+  }
 
   onImportImage(png, fileName) {
     this.unsetClass('.map-import-dialog', 'hidden');
@@ -383,7 +395,7 @@ export class MapsController extends ImageEditorController {
   }
 
   onSwitchedToSecondaryTool(state) {
-  	this.setTool(state ? 'cloner' : 'brush');
+    this.setTool(state ? 'cloner' : 'brush');
   }
 
   onCreateMap() {
@@ -415,16 +427,16 @@ export class MapsController extends ImageEditorController {
   }
 
   onRemoveMap() {
-		showYesNoDialog({
-			title: 'Delete map',
-			text: '<p>Also clear graphics contents beneath map?</p><p>Note that you can also use Ctrl+X (cut) for this operation. Paste it (Ctrl+V) afterwards, which can be useful to move the map around with its contents.</p>',
-			onYes: () => {
-				const map = mapNamed(this.selectedItemName);
-				runOperation(makeDeleteOperation('map', this.selectedItemName));
-				runOperation(makeClearRectOperation('map', { x0: map.x, y0: map.y, x1: map.x + map.w, y1: map.y + map.h }));
-			},
-			onNo: () => runOperation(makeDeleteOperation('map', this.selectedItemName))
-		});
+    showYesNoDialog({
+      title: 'Delete map',
+      text: '<p>Also clear graphics contents beneath map?</p><p>Note that you can also use Ctrl+X (cut) for this operation. Paste it (Ctrl+V) afterwards, which can be useful to move the map around with its contents.</p>',
+      onYes: () => {
+        const map = mapNamed(this.selectedItemName);
+        runOperation(makeDeleteOperation('map', this.selectedItemName));
+        runOperation(makeClearRectOperation('map', { x0: map.x, y0: map.y, x1: map.x + map.w, y1: map.y + map.h }));
+      },
+      onNo: () => runOperation(makeDeleteOperation('map', this.selectedItemName))
+    });
   }
 
   setTool(tool) {
@@ -501,7 +513,7 @@ export class MapsController extends ImageEditorController {
       // Maps use the standard editor and considers that each map cell is one pixel (because each map cell is just one pixel in the mapBitmap, like the palette and sprite bitmaps). The editor supports a final scale, so that you can render in a bigger image, which will be scaled down. We use that to draw to an image that is TW/TH times bigger than the number of pixels (map cells), and instead of rendering a single pixel, we render a tile.
       pixelsPerPixelW = basePlane.tileset.tw;
       pixelsPerPixelH = basePlane.tileset.th;
-			isEditableMap = type === 'map';
+      isEditableMap = type === 'map';
       isEditableObjectPlane = type === 'object';
       this.tileSelector.setTileset(tilesetName, paletteName);
       this.tileSelector.allowMultiSelection = isEditableMap;
@@ -511,12 +523,12 @@ export class MapsController extends ImageEditorController {
       this.setClass('.tile-no-row', 'hidden', this.selectedIndices.length > 0);
       this.setClass('.pal-offset-row', 'hidden', !isEditableMap);
       this.setClass('.obj-props-row', 'hidden', this.selectedIndices.length === 0);
-		} else {
+    } else {
       // Overworld (draw with red/green/blue scale)
       this.imageEditor.ondrawimage = null;
-			this.imageEditor.ondrawpixel = (cacheBitmap, x, y, pixel) =>
-				cacheBitmap.setPixel(x, y, (pixel & 0xf) << 4 | (pixel >> 4 & 0x1f) << 11 | (pixel >> 9 & 0xf) << 20 | 0xff000000);
-		}
+      this.imageEditor.ondrawpixel = (cacheBitmap, x, y, pixel) =>
+        cacheBitmap.setPixel(x, y, (pixel & 0xf) << 4 | (pixel >> 4 & 0x1f) << 11 | (pixel >> 9 & 0xf) << 20 | 0xff000000);
+    }
 
     this.imageEditor.setTool(this.tool);
     this.imageEditor.setBitmapImage({
@@ -584,6 +596,6 @@ export class MapsController extends ImageEditorController {
   }
 
   //drawTile(tileset, palette, cacheBitmap, x, y, pixel) {
-	//	drawTile32(cacheBitmap, x * tileset.tw, y * tileset.th, palette, tileset, pixel);
-	//}
+  //	drawTile32(cacheBitmap, x * tileset.tw, y * tileset.th, palette, tileset, pixel);
+  //}
 }

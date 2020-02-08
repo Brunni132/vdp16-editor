@@ -100,15 +100,15 @@ export class SpritesController extends ImageEditorController {
 
   onCopy() {
     const {indicator, rect} = this.imageEditor.onCopy();
-    const pixels = new Array((rect.x1 - rect.x0) * (rect.y1 - rect.y0));
-    const pixels32 = new Array((rect.x1 - rect.x0) * (rect.y1 - rect.y0));
+    const pixels = new Array(rect.width * rect.height);
+    const pixels32 = new Array(rect.width * rect.height);
     let i = 0;
     for (let y = rect.y0; y < rect.y1; y++)
       for (let x = rect.x0; x < rect.x1; x++, i++) {
         pixels[i] = spriteBitmap.getPixel(x, y);
         pixels32[i] = this.currentPaletteArray[pixels[i]];
       }
-    copyToClipboard('sprite', indicator, rect.x1 - rect.x0, rect.y1 - rect.y0, pixels, pixels32);
+    copyToClipboard('sprite', indicator, rect.width, rect.height, pixels, { width: rect.width, height: rect.height, pixels: pixels32 });
     return {indicator, rect};
   }
 
@@ -118,12 +118,12 @@ export class SpritesController extends ImageEditorController {
     if (indicator) runOperation(makeDeleteOperation('sprite', indicator.text));
   }
 
-	onPaste() {
-		const item = getClipboardData('sprite');
-		if (!item) return;
+  onPaste() {
+    const item = getClipboardData('sprite');
+    if (!item) return;
 
-		this.imageEditor.pasteImage({ ...this.imageEditor.getSuggestedPastePosition(), width: item.width, height: item.height, pixels: item.pixels, indicator: item.indicator });
-	}
+    this.imageEditor.pasteImage({ ...this.imageEditor.getSuggestedPastePosition(), width: item.width, height: item.height, pixels: item.pixels, indicator: item.indicator });
+  }
 
   onKeyDown(e) {
     if (this.imageEditor.onKeyDown(e)) return;

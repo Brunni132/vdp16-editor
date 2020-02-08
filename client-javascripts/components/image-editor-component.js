@@ -17,13 +17,13 @@ import {
   transform,
   translate
 } from "./canvas-component";
-import {makeRectangle, makeSelectionRectangle} from "../math-utils";
+import {makeRectangle, makeRectangleWH, makeSelectionRectangle} from "../math-utils";
 import {setStatusText} from "../controller";
 import {showMultiSelectDialog} from "./multiselect-dialog-component";
 
 export class ImageEditorComponent extends CanvasComponent {
   constructor(canvas, parentSelector) {
-  	super(canvas, parentSelector);
+    super(canvas, parentSelector);
     this.backgroundPattern = this.context.createPattern(createCanvas2DEmptyPattern(), 'repeat');
     this.bitmapImage = null;
     // Called when tool is 'select' and an indicator is selected
@@ -46,15 +46,15 @@ export class ImageEditorComponent extends CanvasComponent {
     // Called when tool is 'cloner'
     this.oncloner = null;
     // Called with (x, y) mouse positions when tool is 'brush'
-		this.onbrushpasted = null;
-		// Called with ([indicator-index], move-x, move-y) when tool is 'move'
-		this.onmovetool = null;
-		// Called when tool is 'move' and something is selected (not moved)
-		this.onmoveselect = null;
-		// Called with (x, y) when tool is 'place'
-		this.onplacetool = null;
-		// Called on click with any other tool
-		this.onothertool = null;
+    this.onbrushpasted = null;
+    // Called with ([indicator-index], move-x, move-y) when tool is 'move'
+    this.onmovetool = null;
+    // Called when tool is 'move' and something is selected (not moved)
+    this.onmoveselect = null;
+    // Called with (x, y) when tool is 'place'
+    this.onplacetool = null;
+    // Called on click with any other tool
+    this.onothertool = null;
     this.brushBitmap = null;
     this.visibleArea = makeRectangle();
     this.tool = 'select';
@@ -91,11 +91,11 @@ export class ImageEditorComponent extends CanvasComponent {
   }
 
   // Necessary to get a nice rectangle of minimum 1x1. Not used in move mode which uses pixel selection.
-	getSelectionRectangle() {
-		if (!this.rectStart) return null;
-		let [x0, y0] = this.rectStart, [x1, y1] = this.rectEnd;
-		return makeSelectionRectangle(x0, y0, x1, y1, this.tool === 'move' ? 0 : 1);
-	}
+  getSelectionRectangle() {
+    if (!this.rectStart) return null;
+    let [x0, y0] = this.rectStart, [x1, y1] = this.rectEnd;
+    return makeSelectionRectangle(x0, y0, x1, y1, this.tool === 'move' ? 0 : 1);
+  }
 
   getSuggestedPastePosition() {
     const start = this.posInTransformedImage([0, 0]);
@@ -120,12 +120,7 @@ export class ImageEditorComponent extends CanvasComponent {
       if (selected) {
         return {
           indicator: selected,
-          rect: {
-            x0: selected.x,
-            y0: selected.y,
-            x1: selected.x + selected.w,
-            y1: selected.y + selected.h
-          }
+          rect: makeRectangleWH(selected.x, selected.y, selected.w, selected.h)
         };
       }
     }
@@ -193,18 +188,18 @@ export class ImageEditorComponent extends CanvasComponent {
         p.bitmap.width / this.pixelW, p.bitmap.height / this.pixelH);
     });
 
-		if (['brush', 'place'].includes(this.tool) && this.brushBitmap.isDrawable()) {
-			let pos = this.posInTransformedImage(this.lastMousePos);
-			if (this.tool === 'brush') pos = floorPos(pos);
-			context.globalAlpha = this.blink([0], [1], 1000)[0];
-			context.drawImage(this.brushBitmap.getCanvasForDrawing(), pos[0], pos[1], this.brushBitmap.width / this.pixelW, this.brushBitmap.height / this.pixelH);
-			// To have a fixed line width (not dependent on transform)
-			const posStart = transform(pos, this.transform);
-			const posEnd = transform([pos[0] + this.brushBitmap.width / this.pixelW, pos[1] + this.brushBitmap.height / this.pixelH], this.transform);
-			context.setTransform(dpr, 0, 0, dpr, 0, 0);
-			this.drawDashedRectangle(context, posStart[0], posStart[1], posEnd[0], posEnd[1], '#ff0');
-			context.globalAlpha = 1;
-		}
+    if (['brush', 'place'].includes(this.tool) && this.brushBitmap.isDrawable()) {
+      let pos = this.posInTransformedImage(this.lastMousePos);
+      if (this.tool === 'brush') pos = floorPos(pos);
+      context.globalAlpha = this.blink([0], [1], 1000)[0];
+      context.drawImage(this.brushBitmap.getCanvasForDrawing(), pos[0], pos[1], this.brushBitmap.width / this.pixelW, this.brushBitmap.height / this.pixelH);
+      // To have a fixed line width (not dependent on transform)
+      const posStart = transform(pos, this.transform);
+      const posEnd = transform([pos[0] + this.brushBitmap.width / this.pixelW, pos[1] + this.brushBitmap.height / this.pixelH], this.transform);
+      context.setTransform(dpr, 0, 0, dpr, 0, 0);
+      this.drawDashedRectangle(context, posStart[0], posStart[1], posEnd[0], posEnd[1], '#ff0');
+      context.globalAlpha = 1;
+    }
 
     // Draw indicators
     context.font = 'Arial 8px';
@@ -238,7 +233,7 @@ export class ImageEditorComponent extends CanvasComponent {
     const needsInitialization = !this.bitmapImage;
     this.bitmapImage = bitmapImage;
     this.pixelW = this.bitmapImage.pixelsPerPixelW || 1;
-		this.pixelH = this.bitmapImage.pixelsPerPixelH || 1;
+    this.pixelH = this.bitmapImage.pixelsPerPixelH || 1;
 
     if (needsInitialization) {
       this.cacheBitmap = new CanvasImageData(this.context, this.bitmapImage.width * this.pixelW, this.bitmapImage.height * this.pixelH);
@@ -363,7 +358,7 @@ export class ImageEditorComponent extends CanvasComponent {
     const lineColor = this.blink([255, 255, 255, 1], [0, 128, 64, 1], 1000, FUNCTIONS.linear);
     let [x0, y0] = this.posOnScreen([this.pastedImage.x, this.pastedImage.y]);
     let [x1, y1] = this.posOnScreen([this.pastedImage.x + this.pastedImage.width, this.pastedImage.y + this.pastedImage.height]);
-		this.drawDashedRectangle(context, x0, y0, x1, y1, makeCssColor(lineColor));
+    this.drawDashedRectangle(context, x0, y0, x1, y1, makeCssColor(lineColor));
   }
 
   drawSelectionRectangle(context) {
@@ -427,18 +422,18 @@ export class ImageEditorComponent extends CanvasComponent {
 
   isRectTool() { return ['rect', 'cloner'].includes(this.tool); }
 
-	concatenateMoveToWriteBuffer(pos) {
-		const prev = this.writePathBuffer.slice(this.writePathBuffer.length - 2);
-		while (pos[0] !== prev[0] || pos[1] !== prev[1]) {
-			// Interpolate move to avoid spots when moving too fast
-			for (let i = 0; i < 2; i++) {
-				if (pos[i] > prev[i]) prev[i]++;
-				else if (pos[i] < prev[i]) prev[i]--;
-			}
-			this.writePathBuffer = this.writePathBuffer.concat([...prev]);
-			this.ondrawpixel(this.cacheBitmap, prev[0] - this.visibleArea.x0, prev[1] - this.visibleArea.y0, this.onrequestpathcolor());
-		}
-	}
+  concatenateMoveToWriteBuffer(pos) {
+    const prev = this.writePathBuffer.slice(this.writePathBuffer.length - 2);
+    while (pos[0] !== prev[0] || pos[1] !== prev[1]) {
+      // Interpolate move to avoid spots when moving too fast
+      for (let i = 0; i < 2; i++) {
+        if (pos[i] > prev[i]) prev[i]++;
+        else if (pos[i] < prev[i]) prev[i]--;
+      }
+      this.writePathBuffer = this.writePathBuffer.concat([...prev]);
+      this.ondrawpixel(this.cacheBitmap, prev[0] - this.visibleArea.x0, prev[1] - this.visibleArea.y0, this.onrequestpathcolor());
+    }
+  }
 
   onDoubleClick(e, mousePos) {
     if (this.tool === 'select') {
@@ -449,14 +444,14 @@ export class ImageEditorComponent extends CanvasComponent {
   }
 
   onMouseDown(e, mousePos) {
-  	// onMouseDown can be called again in case the tool changes immediately (right click, etc.)
+    // onMouseDown can be called again in case the tool changes immediately (right click, etc.)
     if (!this.isDown) {
-			this.isDown = true;
-			this.hasMoved = false;
-			this.switchedToSecondaryTool = false;
-			this.draggedPastedImagePos = this.draggingPastedImage = null;
-			this.moveModeLastPos = null;
-		}
+      this.isDown = true;
+      this.hasMoved = false;
+      this.switchedToSecondaryTool = false;
+      this.draggedPastedImagePos = this.draggingPastedImage = null;
+      this.moveModeLastPos = null;
+    }
     if (mouseEventShouldMove(e)) {
       this.moveLastPos = mousePos;
       e.preventDefault(); // middle click triggers a move tool on Windows
@@ -493,21 +488,21 @@ export class ImageEditorComponent extends CanvasComponent {
         this.onMouseMove(e, mousePos);
       }
     } else if (this.isRectTool()) {
-			this.rectStart = floorPos(this.posInTransformedImageClamped(mousePos));
-			this.onMouseMove(e, mousePos);
+      this.rectStart = floorPos(this.posInTransformedImageClamped(mousePos));
+      this.onMouseMove(e, mousePos);
     } else if (this.tool === 'place') {
       const pos = this.posInTransformedImage(mousePos);
       this.brushBitmap.isDrawable() && this.onplacetool(Math.round(pos[0] * this.pixelW), Math.round(pos[1] * this.pixelH));
-		} else if (this.tool === 'brush') {
-			if (e.button === 2 && this.onswitchtosecondarytool) {
-				this.switchedToSecondaryTool = true;
-				this.onswitchtosecondarytool(true);
-				return this.onMouseDown(e, mousePos);
-			}
-			const pos = floorPos(this.posInTransformedImage(mousePos));
-			this.brushBitmap.isDrawable() && this.onbrushpasted(pos[0], pos[1]);
-		} else if (this.tool === 'eyedropper') {
-    	this.onMouseMove(e, mousePos);
+    } else if (this.tool === 'brush') {
+      if (e.button === 2 && this.onswitchtosecondarytool) {
+        this.switchedToSecondaryTool = true;
+        this.onswitchtosecondarytool(true);
+        return this.onMouseDown(e, mousePos);
+      }
+      const pos = floorPos(this.posInTransformedImage(mousePos));
+      this.brushBitmap.isDrawable() && this.onbrushpasted(pos[0], pos[1]);
+    } else if (this.tool === 'eyedropper') {
+      this.onMouseMove(e, mousePos);
     } else if (this.tool === 'pen') {
       const pos = this.posInTransformedImage(mousePos).map(p => Math.floor(p));
       if (!this.inVisibleArea(pos[0], pos[1])) return;
@@ -516,8 +511,8 @@ export class ImageEditorComponent extends CanvasComponent {
         this.onswitchtosecondarytool(true);
         return this.onMouseDown(e, mousePos);
       }
-			this.writePathBuffer = [...pos];
-			this.ondrawpixel(this.cacheBitmap, pos[0] - this.visibleArea.x0, pos[1] - this.visibleArea.y0, this.onrequestpathcolor());
+      this.writePathBuffer = [...pos];
+      this.ondrawpixel(this.cacheBitmap, pos[0] - this.visibleArea.x0, pos[1] - this.visibleArea.y0, this.onrequestpathcolor());
     } else if (this.tool === 'select') {
       const imagePosition = this.posInTransformedImage(mousePos);
       const imagePixelX = imagePosition[0] | 0, imagePixelY = imagePosition[1] | 0;
@@ -627,7 +622,7 @@ export class ImageEditorComponent extends CanvasComponent {
   }
 
   onResize() {
-  	this.resizeCanvas();
+    this.resizeCanvas();
     if (this.bitmapImage) {
       if (this.panMode === 'scroll') this.focusArea(this.visibleArea.x0, 0, this.visibleArea.x1, 0, true);
       this.ensureTransformInVisibleArea();
@@ -639,7 +634,7 @@ export class ImageEditorComponent extends CanvasComponent {
     this.cacheBitmapDirty = false;
 
     // We resize the bitmap to save memory and draw it at the position visibleArea.x/y0 because there's nothing outside of those boundaries
-		this.cacheBitmap.setSize(context, this.visibleArea.width * this.pixelW, this.visibleArea.height * this.pixelH);
+    this.cacheBitmap.setSize(context, this.visibleArea.width * this.pixelW, this.visibleArea.height * this.pixelH);
     if (this.ondrawimage) {
       this.renderImageList = this.ondrawimage(this.cacheBitmap, this.visibleArea);
       return;
