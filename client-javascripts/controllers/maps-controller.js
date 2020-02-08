@@ -102,7 +102,7 @@ export class MapsController extends ImageEditorController {
     super.onFocus();
     ImageEditorController.updateTilesetList(this.element('.map-til'));
     ImageEditorController.updatePaletteList(this.element('.map-pal'));
-    this.onChangeState();
+    this.onChangeState(true);
   }
 
   onPeriodicRender() {
@@ -110,20 +110,20 @@ export class MapsController extends ImageEditorController {
     if (this.focusedMode) this.tileSelector.render();
   }
 
-  onChangeState(state) {
+  onChangeState(goingForward) {
     if (!mapNamed(this.selectedItemName)) this.selectedItemName = null;
     this.updateEditor();
     // Clear cached object list
     if (this.focusedMode) {
       this.objList = this.getPlaneInfo(this.activePlane).objectList;
     }
-    this.imageEditor.onChangeState(state);
+    this.imageEditor.onChangeState(goingForward);
     this.imageEditor.notifyBitmapImageChanged();
     this.tileSelector.notifyBitmapImageChanged();
     this.updateBrushRender();
   }
 
-  onCopy() {
+	onCopyOrExport(isExport) {
     // Object mode
     if (this.objList) {
       if (!this.selectedIndices.length) return [];
@@ -139,13 +139,14 @@ export class MapsController extends ImageEditorController {
       for (let x = rect.x0; x < rect.x1; x++, i++)
         pixels[i] = mapBitmap.getPixel(x, y);
 
-    if (indicator) {
-      const { tileset, paletteArray } = this.getPlaneInfo(indicator.text);
+    const englobingIndicators = this.imageEditor.indicatorsInRect(rect);
+    if (englobingIndicators.length === 1) {
+      const { tileset, paletteArray } = this.getPlaneInfo(englobingIndicators[0].text);
       const clipboardBitmap = new CanvasImageData(this.imageEditor.context, rect.width * tileset.tw, rect.height * tileset.th);
       for (let y = rect.y0; y < rect.y1; y++)
         for (let x = rect.x0; x < rect.x1; x++)
           drawTile32(clipboardBitmap, (x - rect.x0) * tileset.tw, (y - rect.y0) * tileset.th, paletteArray, tileset, mapBitmap.getPixel(x, y));
-      copyToClipboard('map', indicator, rect.width, rect.height, pixels, { width: clipboardBitmap.width, height: clipboardBitmap.height, pixels: clipboardBitmap.color32 });
+      copyToClipboard('map', indicator, rect.width, rect.height, pixels, { width: clipboardBitmap.width, height: clipboardBitmap.height, pixels: clipboardBitmap.color32, isExport });
     } else {
       copyToClipboard('map', indicator, rect.width, rect.height, pixels);
     }
@@ -156,14 +157,14 @@ export class MapsController extends ImageEditorController {
     // Object mode
     if (this.objList) {
       if (!this.selectedIndices.length) return;
-      const copiedIndices = this.onCopy();
+      const copiedIndices = this.onCopyOrExport(false);
       copiedIndices.sort().reverse().forEach(i => this.objList.splice(i, 1));
       runOperation(makeObjectChangeOperation(this.getPlaneInfo(this.activePlane).mapName, this.objList));
       return;
     }
 
     // Map (overview) mode
-    const { rect, indicator } = this.onCopy();
+    const { rect, indicator } = this.onCopyOrExport(false);
     runOperation(makeClearRectOperation('map', rect));
     if (indicator) runOperation(makeDeleteOperation('map', indicator.text));
   }

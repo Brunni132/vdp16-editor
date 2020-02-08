@@ -58,6 +58,19 @@ export async function saveGameResources() {
   await postImage('/game-data/maps.png', mapBitmap);
 }
 
+export async function saveEditorConfig() {
+	postText('/game-data/editor-config.json', JSON.stringify(editorConfig));
+}
+
+export async function fetchEditorConfig() {
+	try {
+		const res = await window.fetch('/game-data/editor-config.json');
+		Object.assign(editorConfig, JSON.parse(await res.text()));
+	} catch (e) {
+		console.error('Error fetching editor config', e);
+	}
+}
+
 export async function postGameCode(code) {
   gameCode = code;
   await postText('/game-data/code/game-main.js', gameCode);
@@ -470,7 +483,7 @@ function runPendingOperations() {
   g_undoBuffer.saveStep(step);
   step.execute();
   // Not really a restore, but we just ask the controller to update everything
-  restoreFunction();
+  restoreFunction(true);
 }
 
 // Can run one operation or an array of linked operations (undone/redone atomically)
@@ -487,3 +500,7 @@ export function runOperation(operation) {
 }
 
 export let gameCode, gameResourceData, paletteBitmap, spriteBitmap, mapBitmap;
+export const editorConfig = {
+	useClipboard: true,
+	usePinkTransparency: false,
+};

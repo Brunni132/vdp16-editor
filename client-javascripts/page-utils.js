@@ -1,12 +1,16 @@
 import {PNG} from 'pngjs/browser';
-import {gameResourceData} from "./api";
+import {editorConfig, gameResourceData} from "./api";
 
-export function pixels32ToPng(destPngData, pixels) {
+export function pixels32ToPng(destPngData, pixels, usePinkTransparency) {
   for (let i = 0; i < pixels.length; i++) {
-    destPngData[i * 4] = pixels[i] & 0xff;
-    destPngData[i * 4 + 1] = pixels[i] >> 8 & 0xff;
-    destPngData[i * 4 + 2] = pixels[i] >> 16 & 0xff;
-    destPngData[i * 4 + 3] = pixels[i] >> 24 & 0xff;
+  	let pix = pixels[i];
+  	if (pixels[i] >> 24 === 0) {
+			pix = 0xfffe00ff;
+		}
+		destPngData[i * 4] = pix & 0xff;
+		destPngData[i * 4 + 1] = pix >> 8 & 0xff;
+		destPngData[i * 4 + 2] = pix >> 16 & 0xff;
+		destPngData[i * 4 + 3] = pix >> 24 & 0xff;
   }
 }
 
@@ -29,6 +33,13 @@ export function decodePng(arrayBuffer) {
         console.error('Failed to read image', error);
         return reject(error);
       }
+      if (editorConfig.usePinkTransparency) {
+      	for (let i = 0; i < data.data.length; i += 4) {
+					if (data.data[i] === 0xff && data.data[i + 1] === 0x00 && data.data[i + 2] === 0xfe) {
+						data.data[i] = data.data[i + 1] = data.data[i + 2] = data.data[i + 3] = 0;
+					}
+				}
+			}
       return resolve({
         width: data.width,
         height: data.height,

@@ -1,5 +1,6 @@
 import {Component} from "../component";
 import {decodePng} from "../page-utils";
+import {hasClipboardSupport, readImageInClipboardIfAny} from "../clipboard";
 
 export class ImageImportComponent extends Component {
   constructor(selector) {
@@ -8,12 +9,29 @@ export class ImageImportComponent extends Component {
     this.onfileloaded = null;
 
     this.fileImport = this.element('.file-import');
-    this.element('.import-button').onclick = this.openDialog.bind(this);
+    this.element('.import-button').onclick = event => {
+    	if (!hasClipboardSupport()) {
+				this.openDialog();
+				return;
+			}
+
+			try {
+				readImageInClipboardIfAny().then(png => {
+					if (png) this.onfileloaded && this.onfileloaded(png, 'untitled');
+					else this.openDialog();
+				});
+				event.preventDefault();
+				return true;
+			} catch (e) {
+				console.error('Error when fetching the clipboard', e);
+				this.openDialog();
+			}
+		};
 
     const reader = new FileReader();
     reader.onload = event => {
       decodePng(event.target.result).then(png => {
-        if (this.onfileloaded) this.onfileloaded(png, this.fileName);
+        this.onfileloaded && this.onfileloaded(png, this.fileName);
       });
     };
     this.fileImport.onchange = () => {

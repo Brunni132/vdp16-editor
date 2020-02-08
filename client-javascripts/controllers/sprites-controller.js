@@ -84,21 +84,21 @@ export class SpritesController extends ImageEditorController {
     ImageEditorController.updatePaletteList(this.element('.active-palette'));
     ImageEditorController.updatePaletteList(this.element('.sprite-pal'));
     this.activeColor.setColors32(this.currentPaletteArray);
-    this.onChangeState();
+    this.onChangeState(true);
   }
 
   onPeriodicRender() {
     this.imageEditor.render();
   }
 
-  onChangeState(state) {
+  onChangeState(goingForward) {
     if (!spriteNamed(this.selectedItemName)) this.selectedItemName = null;
     this.updateEditor();
-    this.imageEditor.onChangeState(state);
+    this.imageEditor.onChangeState(goingForward);
     this.imageEditor.notifyBitmapImageChanged();
   }
 
-  onCopy() {
+  onCopyOrExport(isExport) {
     const {indicator, rect} = this.imageEditor.onCopy();
     const pixels = new Array(rect.width * rect.height);
     const pixels32 = new Array(rect.width * rect.height);
@@ -108,12 +108,12 @@ export class SpritesController extends ImageEditorController {
         pixels[i] = spriteBitmap.getPixel(x, y);
         pixels32[i] = this.currentPaletteArray[pixels[i]];
       }
-    copyToClipboard('sprite', indicator, rect.width, rect.height, pixels, { width: rect.width, height: rect.height, pixels: pixels32 });
+    copyToClipboard('sprite', indicator, rect.width, rect.height, pixels, { width: rect.width, height: rect.height, pixels: pixels32, isExport });
     return {indicator, rect};
   }
 
   onCut() {
-    const { rect, indicator } = this.onCopy();
+    const { rect, indicator } = this.onCopyOrExport(false);
     runOperation(makeClearRectOperation('sprite', rect));
     if (indicator) runOperation(makeDeleteOperation('sprite', indicator.text));
   }

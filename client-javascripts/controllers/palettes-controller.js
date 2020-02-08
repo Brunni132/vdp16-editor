@@ -16,6 +16,7 @@ import {copyToClipboard, getClipboardData} from "../clipboard";
 import {ImageEditorController} from "./image-editor-controller";
 import {makeRectangleWH} from "../math-utils";
 import {showYesNoDialog} from "../components/yesno-dialog-component";
+import {pngToPixels32} from "../page-utils";
 
 export class PalettesController extends ImageEditorController {
   constructor() {
@@ -62,33 +63,33 @@ export class PalettesController extends ImageEditorController {
 
   onFocus() {
     super.onFocus();
-    this.onChangeState();
+    this.onChangeState(true);
   }
 
   onPeriodicRender() {
     this.imageEditor.render();
   }
 
-  onChangeState(state) {
+  onChangeState(goingForward) {
     if (!paletteNamed(this.selectedItemName)) this.selectedItemName = null;
     this.updateEditor();
-    this.imageEditor.onChangeState(state);
+    this.imageEditor.onChangeState(goingForward);
     this.imageEditor.notifyBitmapImageChanged();
   }
 
-  onCopy() {
+  onCopyOrExport(isExport) {
     const {indicator, rect} = this.imageEditor.onCopy();
     const pixels = new Array(rect.width * rect.height);
     let i = 0;
     for (let y = rect.y0; y < rect.y1; y++)
       for (let x = rect.x0; x < rect.x1; x++, i++)
         pixels[i] = paletteBitmap.getPixel(x, y);
-    copyToClipboard('palette', indicator, rect.width, rect.height, pixels, { width: rect.width, height: rect.height, pixels });
+    copyToClipboard('palette', indicator, rect.width, rect.height, pixels, { width: rect.width, height: rect.height, pixels, isExport });
     return {indicator, rect};
   }
 
   onCut() {
-    const { rect, indicator } = this.onCopy();
+    const { rect, indicator } = this.onCopyOrExport(false);
     runOperation(makeClearRectOperation('palette', rect));
     // Do not allow a situation where we have no palette, since we don't have a way to create them
     if (indicator && Object.keys(gameResourceData.pals).length > 1) {

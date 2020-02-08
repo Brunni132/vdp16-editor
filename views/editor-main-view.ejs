@@ -15,6 +15,7 @@
     <button id="sprites-button" class="item">Sprites</button>
     <button id="maps-button" class="item">Tilemaps</button>
     <button id="game-button" class="item" data-tooltip="Save all and run in a new tab|Ctrl+R on Mac, Alt+R elsewhere.">Run game</button>
+    <button id="settings-button" class="item"><i class="fa fa-cog"></i></button>
 </div>
 
 <%- include controllers/code-view.ejs %>
@@ -22,6 +23,7 @@
 <%- include controllers/sprites-view.ejs %>
 <%- include controllers/maps-view.ejs %>
 
+<%- include components/settings-dialog-component.ejs %>
 <%- include components/yesno-dialog-component.ejs %>
 <%- include components/multiselect-dialog-component.ejs %>
 <%- include components/tooltip.ejs %>

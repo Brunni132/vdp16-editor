@@ -5,12 +5,13 @@ import {MapsController} from "./controllers/maps-controller";
 import {element, elements, isInputComponent, isMac, setClass, unsetClass} from "./page-utils";
 import {registerTooltip} from "./components/tooltip";
 import {
-  saveGameResources,
-  updateGameCode,
-  updateGameResourceData,
-  updateMapBitmap,
-  updatePaletteBitmap,
-  updateSpriteBitmap
+	editorConfig, fetchEditorConfig, saveEditorConfig,
+	saveGameResources,
+	updateGameCode,
+	updateGameResourceData,
+	updateMapBitmap,
+	updatePaletteBitmap,
+	updateSpriteBitmap
 } from "./api";
 import {setStatusText} from "./controller";
 
@@ -65,8 +66,9 @@ export async function saveGame() {
   }
 }
 
-export function restoreFunction(state) {
-  currentController && currentController.onChangeState(state);
+// goingForward should be set to true for a non-really-undo but just a save point of the state
+export function restoreFunction(goingForward) {
+  currentController && currentController.onChangeState(goingForward);
 }
 
 window.addEventListener('focus', () => currentController && currentController.onFocus());
@@ -88,19 +90,25 @@ window.addEventListener('keydown', e => {
       return currentController && currentController.onRedo();
     } else if (e.metaKey && e.key === 'z') {
       return currentController && currentController.onUndo();
+		} else if (e.metaKey && e.key === 'e') {
+			currentController && currentController.onCopyOrExport(true);
+			return e.preventDefault();
     }
   } else if (e.ctrlKey) {
     if (e.ctrlKey && e.key === 'z') {
       return currentController && currentController.onUndo();
     } else if (e.ctrlKey && e.key === 'y') {
       return currentController && currentController.onRedo();
+		} else if (e.ctrlKey && e.key === 'e') {
+			currentController && currentController.onCopyOrExport(true);
+			return e.preventDefault();
     }
   }
   currentController && currentController.onKeyDown(e);
 });
 window.addEventListener('resize', () => currentController && currentController.onResize());
 document.addEventListener('cut', () => currentController && currentController.onCut());
-document.addEventListener('copy', () => currentController && currentController.onCopy());
+document.addEventListener('copy', () => currentController && currentController.onCopyOrExport(false));
 document.addEventListener('paste', () => currentController && currentController.onPaste());
 registerTooltip();
 
@@ -126,6 +134,20 @@ element('.top-menu').addEventListener('mouseout', () => {
 });
 
 element('#game-button').onclick = runGame;
+element('#settings-button').onclick = () => {
+	unsetClass('.settings-dialog', 'hidden');
+	element('#setting-use-clipboard').checked = editorConfig.useClipboard;
+	element('#setting-use-pink').checked = editorConfig.usePinkTransparency;
+	element('.settings-dialog .button-ok').onclick = () => {
+		editorConfig.useClipboard = element('#setting-use-clipboard').checked;
+		editorConfig.usePinkTransparency = element('#setting-use-pink').checked;
+		saveEditorConfig();
+		setClass('.settings-dialog', 'hidden');
+	};
+	element('.settings-dialog .button-cancel').onclick = () => {
+		setClass('.settings-dialog', 'hidden');
+	};
+};
 
 // Load data and save initial undo steps
 updateGameResourceData()
@@ -133,6 +155,7 @@ updateGameResourceData()
   .then(() => updateSpriteBitmap())
   .then(() => updateMapBitmap())
   .then(() => updateGameCode())
+	.then(() => fetchEditorConfig())
   .then(() => {
     onSelectController('code', element('#code-button'));
   });

@@ -33,6 +33,7 @@ export class Controller extends Component {
 
   async onLoad() {
     this.element('.save-button').onclick = saveGame;
+		this.element('.export-button').onclick = () => this.onCopyOrExport(true);
   }
   // Focus/blur indicate that the view is active/inactive while shown on the screen
   // willBecomeActive/inactive indicate that the controller is shown or not
@@ -47,7 +48,7 @@ export class Controller extends Component {
     g_undoBuffer.redo();
   }
   onCut() {}
-  onCopy() {}
+	onCopyOrExport(isExport) {}
   onPaste() {}
-  onChangeState() {}
+  onChangeState(state, goingForward) {}
 }

@@ -14,6 +14,16 @@ router.post('/code/game-main.js', (req, res, next) => {
   });
 });
 
+router.get('/editor-config.json', (req, res, next) => {
+	fs.readFile('editor-config.json', (err, text) => res.send(text));
+});
+
+router.post('/editor-config.json', (req, res, next) => {
+	fs.writeFile('editor-config.json', req.body, (err, result) => {
+		res.sendStatus(200);
+	});
+});
+
 router.get('/game.json', (req, res, next) => {
   fs.readFile('dist/game.json', (err, text) => res.send(text));
 });

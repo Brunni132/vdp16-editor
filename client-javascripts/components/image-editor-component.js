@@ -146,8 +146,8 @@ export class ImageEditorComponent extends CanvasComponent {
     return true;
   }
 
-  onChangeState(state) {
-    this.cancelPaste();
+  onChangeState(goingForward) {
+    if (!goingForward) this.cancelPaste();
   }
 
   // Image: {x, y, width, height, pixels}
@@ -291,8 +291,13 @@ export class ImageEditorComponent extends CanvasComponent {
 
     const { context } = this;
     const { width, height } = this.canvas;
-    const start = this.posOnScreen([indicator.x, indicator.y]);
-    const end = this.posOnScreen([indicator.x + indicator.w, indicator.y + indicator.h]);
+    const indicatorPos = [indicator.x, indicator.y];
+    if (indicator.indType === 'object') {
+    	indicatorPos[0] += this.visibleArea.x0;
+			indicatorPos[1] += this.visibleArea.y0;
+		}
+    const start = this.posOnScreen([indicatorPos[0], indicatorPos[1]]);
+    const end = this.posOnScreen([indicatorPos[0] + indicator.w, indicatorPos[1] + indicator.h]);
     const x0 = start[0], y0 = start[1], x1 = end[0], y1 = end[1];
     // Outside of screen
     if (x1 < 0 || y1 < 0 || x0 >= width || y0 >= height) return;
@@ -378,6 +383,14 @@ export class ImageEditorComponent extends CanvasComponent {
     ];
   }
 
+  // To use for the object list, that has absolute positioning (converts an absolute pos in the transformed image to a position that doesn't depend on the offset of the map).
+	makeAbsolute(vectorOrRect) {
+		if (vectorOrRect instanceof Float32Array) return subtract(vectorOrRect, [this.visibleArea.x0, this.visibleArea.y0]);
+		return makeRectangleWH(
+			vectorOrRect.x0 - this.visibleArea.x0, vectorOrRect.y0 - this.visibleArea.y0,
+			vectorOrRect.width, vectorOrRect.height);
+	}
+
   ensureTransformInVisibleArea() {
     this.ensureTransformInArea(this.visibleArea);
   }
@@ -409,7 +422,7 @@ export class ImageEditorComponent extends CanvasComponent {
 
   indicatorsInRect(rect) {
     return this.bitmapImage.indicators.filter(i =>
-      i.x + i.w >= rect.x0 && i.x < rect.x1 && i.y + i.h >= rect.y0 && i.y < rect.y1);
+      i.x + i.w > rect.x0 && i.x < rect.x1 && i.y + i.h > rect.y0 && i.y < rect.y1);
   }
 
   inPastedImage(x, y) {
@@ -466,8 +479,9 @@ export class ImageEditorComponent extends CanvasComponent {
         this.isDown = false;
       }
     } else if (this.tool === 'move') {
-      const imagePosition = this.posInTransformedImageClamped(mousePos);
-      const indicator = this.indicatorAtPosition(imagePosition[0], imagePosition[1]);
+      const imagePosition = this.posInTransformedImage(mousePos);
+      const absolutePosition = this.makeAbsolute(imagePosition);
+      const indicator = this.indicatorAtPosition(absolutePosition[0], absolutePosition[1]);
       if (indicator) {
         if (e.ctrlKey) {
           this.hasMoved = false;
@@ -491,7 +505,7 @@ export class ImageEditorComponent extends CanvasComponent {
       this.rectStart = floorPos(this.posInTransformedImageClamped(mousePos));
       this.onMouseMove(e, mousePos);
     } else if (this.tool === 'place') {
-      const pos = this.posInTransformedImage(mousePos);
+      const pos = this.makeAbsolute(this.posInTransformedImage(mousePos));
       this.brushBitmap.isDrawable() && this.onplacetool(Math.round(pos[0] * this.pixelW), Math.round(pos[1] * this.pixelH));
     } else if (this.tool === 'brush') {
       if (e.button === 2 && this.onswitchtosecondarytool) {
@@ -554,7 +568,7 @@ export class ImageEditorComponent extends CanvasComponent {
       this.hasMoved = true;
     } else if (this.tool === 'move') {
       if (this.moveModeInitialPos) {
-        const imagePosition = this.posInTransformedImageClamped(mousePos);
+        const imagePosition = this.posInTransformedImage(mousePos);
         const dist = this.distanceOnScreen(subtract(imagePosition, this.moveModeLastPos));
         if (!this.hasMoved && vec2.length(dist) < MIN_DISTANCE_FOR_MOVE) return;
         this.getHighlighted().forEach(i => {
@@ -564,7 +578,7 @@ export class ImageEditorComponent extends CanvasComponent {
         this.moveModeLastPos = imagePosition;
         this.hasMoved = true;
       } else {
-        this.rectEnd = this.posInTransformedImageClamped(mousePos);
+        this.rectEnd = this.posInTransformedImage(mousePos);
       }
     } else if (this.isRectTool()) {
       this.rectEnd = floorPos(this.posInTransformedImageClamped(mousePos)).map(e => e + 1);
@@ -586,7 +600,7 @@ export class ImageEditorComponent extends CanvasComponent {
   onMouseOut(e) {
     if (this.writePathBuffer) this.onpenwrite && this.onpenwrite(this.writePathBuffer);
     if (this.tool === 'move' && this.rectStart) {
-      const indicators = this.indicatorsInRect(this.getSelectionRectangle());
+      const indicators = this.indicatorsInRect(this.makeAbsolute(this.getSelectionRectangle()));
       indicators.forEach(i => i.highlighted = true);
       this.onmoveselect(this.getHighlightedIndices());
       this.clearSelection();

@@ -17,12 +17,12 @@ export class UndoBuffer {
   undo() {
     if (this.undoStep <= 0) return;
     this.undoBuffer[--this.undoStep].reverse();
-    this.onrestorestate();
+    this.onrestorestate(false);
   }
 
   redo() {
     if (this.undoStep === this.totalActions) return;
     this.undoBuffer[this.undoStep++].execute();
-    this.onrestorestate();
+    this.onrestorestate(false);
   }
 }
