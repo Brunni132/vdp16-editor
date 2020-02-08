@@ -11,17 +11,16 @@ export function hasClipboardSupport() {
 
 export function copyToClipboard(type, indicator, width, height, pixels, clipboard = null) {
   currentClipboardItem = { type, indicator, width, height, pixels };
-  if (!clipboard || !hasClipboardSupport()) return;
+  if (!clipboard) return;
 
   // Write as PNG to the clipboard
   const png = new PNG({width: clipboard.width, height: clipboard.height});
   pixels32ToPng(png.data, clipboard.pixels, editorConfig.usePinkTransparency);
-
   const blob = new Blob([PNG.sync.write(png)], {type : "image/png"});
 
 	if (clipboard.isExport) {
 		saveAs(blob, 'image.png');
-	} else if (editorConfig.useClipboard) {
+	} else if (hasClipboardSupport()) {
 		const cbItem = new ClipboardItem({"image/png": blob});
 		navigator.clipboard.write([cbItem]);
 	}
@@ -47,7 +46,7 @@ export async function readImageInClipboardIfAny() {
 	for (let t of item.types) {
 		if (t === 'image/png') {
 			const blob = await item.getType(t);
-			return decodePng(await blob.arrayBuffer());
+			return decodePng(await blob.arrayBuffer(), editorConfig.usePinkTransparency);
 		}
 	}
 	return null;

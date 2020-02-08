@@ -1,16 +1,16 @@
 import {PNG} from 'pngjs/browser';
 import {editorConfig, gameResourceData} from "./api";
 
-export function pixels32ToPng(destPngData, pixels, usePinkTransparency) {
+export function pixels32ToPng(destPngData, pixels, usePinkTransparency = false) {
   for (let i = 0; i < pixels.length; i++) {
-  	let pix = pixels[i];
-  	if (pixels[i] >> 24 === 0) {
-			pix = 0xfffe00ff;
-		}
-		destPngData[i * 4] = pix & 0xff;
-		destPngData[i * 4 + 1] = pix >> 8 & 0xff;
-		destPngData[i * 4 + 2] = pix >> 16 & 0xff;
-		destPngData[i * 4 + 3] = pix >> 24 & 0xff;
+    let pix = pixels[i];
+    if (usePinkTransparency && pixels[i] >> 24 === 0) {
+      pix = 0xfffe00ff;
+    }
+    destPngData[i * 4] = pix & 0xff;
+    destPngData[i * 4 + 1] = pix >> 8 & 0xff;
+    destPngData[i * 4 + 2] = pix >> 16 & 0xff;
+    destPngData[i * 4 + 3] = pix >> 24 & 0xff;
   }
 }
 
@@ -24,7 +24,7 @@ export function pngToPixels32(pngData) {
   return result;
 }
 
-export function decodePng(arrayBuffer) {
+export function decodePng(arrayBuffer, usePinkTransparency) {
   // TODO -- Doesn't work with PNG.sync.read, debug
   // PNG.sync.read(arrayBuffer);
   return new Promise((resolve, reject) => {
@@ -33,13 +33,13 @@ export function decodePng(arrayBuffer) {
         console.error('Failed to read image', error);
         return reject(error);
       }
-      if (editorConfig.usePinkTransparency) {
-      	for (let i = 0; i < data.data.length; i += 4) {
-					if (data.data[i] === 0xff && data.data[i + 1] === 0x00 && data.data[i + 2] === 0xfe) {
-						data.data[i] = data.data[i + 1] = data.data[i + 2] = data.data[i + 3] = 0;
-					}
-				}
-			}
+      if (usePinkTransparency) {
+        for (let i = 0; i < data.data.length; i += 4) {
+          if (data.data[i] === 0xff && data.data[i + 1] === 0x00 && data.data[i + 2] === 0xfe) {
+            data.data[i] = data.data[i + 1] = data.data[i + 2] = data.data[i + 3] = 0;
+          }
+        }
+      }
       return resolve({
         width: data.width,
         height: data.height,

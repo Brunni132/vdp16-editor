@@ -501,6 +501,6 @@ export function runOperation(operation) {
 
 export let gameCode, gameResourceData, paletteBitmap, spriteBitmap, mapBitmap;
 export const editorConfig = {
-	useClipboard: true,
+	useClipboard: false,
 	usePinkTransparency: false,
 };

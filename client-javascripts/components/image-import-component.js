@@ -1,6 +1,7 @@
 import {Component} from "../component";
 import {decodePng} from "../page-utils";
 import {hasClipboardSupport, readImageInClipboardIfAny} from "../clipboard";
+import {editorConfig} from "../api";
 
 export class ImageImportComponent extends Component {
   constructor(selector) {
@@ -30,7 +31,7 @@ export class ImageImportComponent extends Component {
 
     const reader = new FileReader();
     reader.onload = event => {
-      decodePng(event.target.result).then(png => {
+      decodePng(event.target.result, editorConfig.usePinkTransparency).then(png => {
         this.onfileloaded && this.onfileloaded(png, this.fileName);
       });
     };
