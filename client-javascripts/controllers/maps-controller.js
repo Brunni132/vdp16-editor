@@ -123,7 +123,7 @@ export class MapsController extends ImageEditorController {
     this.updateBrushRender();
   }
 
-	onCopyOrExport(isExport) {
+  onCopyOrExport(isExport) {
     // Object mode
     if (this.objList) {
       if (!this.selectedIndices.length) return [];
@@ -270,6 +270,11 @@ export class MapsController extends ImageEditorController {
   onChangeActivePlane() {
     const { objectList, map, type } = this.getPlaneInfo(this.activePlane);
     if (type === 'map') this.imageEditor.setVisibleArea(map.x, map.y, map.w, map.h, false, true);
+    else {
+      // In object-mode, place the viewport always at (0,0) to avoid offset with positioning inside the imageEditor
+      const mainMap = this.getPlaneInfo(0).map;
+      this.imageEditor.setVisibleArea(0, 0, mainMap.w, mainMap.h, false, true);
+    }
     this.objList = objectList;
     this.clearBrush();
     this.selectedIndices = [];
