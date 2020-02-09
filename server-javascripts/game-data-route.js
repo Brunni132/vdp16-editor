@@ -39,7 +39,7 @@ router.get('/palettes.png', (req, res, next) => {
     .pipe(new PNG())
     .on('parsed', function(png) {
       const width = this.width;
-      const height = Math.min(8, this.height);
+      const height = Math.min(32, this.height);
       res.set('X-Image-Details', JSON.stringify({width, height}));
       res.end(this.data.subarray(0, width * height * 4), 'binary');
     });
